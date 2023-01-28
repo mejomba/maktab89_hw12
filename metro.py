@@ -47,3 +47,26 @@ class User:
     def login(self) -> "User":
         pass
 
+
+class BankAccount():
+    wage_amount = 100
+    min_balance = 1000
+
+    def __init__(self, owner: User, balance: int) -> None:
+        self.owner = owner
+        self.__balance = balance
+
+    @property
+    def owner(self):
+        return self.__owner
+
+    @owner.setter
+    def owner(self, value):
+        try:
+            if isinstance(value, User):
+                self.__owner = User
+            else:
+                raise TypeError(f'{RED}owner must be a User{END}')
+        except TypeError as e:
+            print(f'ERR: {e}')
+

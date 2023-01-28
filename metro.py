@@ -70,3 +70,26 @@ class BankAccount():
         except TypeError as e:
             print(f'ERR: {e}')
 
+    @property
+    def balance(self):
+        return self.__balance
+
+    def __check_min_balance(self) -> bool:
+        pass
+
+    def withdraw(self) -> None:
+        pass
+
+    def deposit(self) -> None:
+        pass
+
+    def get_balance(self) -> int:
+        pass
+
+    def change_wage(self) -> None:
+        pass
+
+    def change_min_balance(self) -> None:
+        pass
+
+

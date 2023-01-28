@@ -97,3 +97,6 @@ class BankAccount():
         pass
 
 
+class Passenger(User):
+    def __init__(self):
+        pass

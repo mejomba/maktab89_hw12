@@ -18,6 +18,9 @@ class User:
         self.phone = phone
         self.email = email
 
+    def get_info(self) -> str:
+        pass
+
     @staticmethod
     def __valid_pass(name_var: str, password: str) -> str:
         """
@@ -34,7 +37,13 @@ class User:
         except ValueError as e:
             print(f'{YELLOW}("Hint:"){END}', e)
 
+    def __valid_username(self) -> str:
+        pass
+
     @classmethod
     def register_new_user(cls):
+        pass
+
+    def login(self) -> "User":
         pass
 

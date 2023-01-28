@@ -100,3 +100,17 @@ class BankAccount():
 class Passenger(User):
     def __init__(self):
         pass
+
+
+menu = {
+    1: 'register new user',
+    2: 'manage bank account',
+    3: 'buy ticket for travel',
+    4: 'Administrator',
+    0: 'exit'
+}
+administrator_menu = {
+    1: 'submit travel',
+    2: 'edit travel',
+    0: 'exit'
+}

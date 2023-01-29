@@ -1,0 +1,2 @@
+class MinBalanceException(Exception):
+    pass

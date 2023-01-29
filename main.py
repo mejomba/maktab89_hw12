@@ -1,6 +1,7 @@
 import os
 from metro import User
 from admin import Admin
+from custom_contextmanager import CreateUserContextManager
 
 
 RED = "\033[0;31m"
@@ -42,3 +43,9 @@ if __name__ == "__main__":
     while True:
         show_menu(main_menu)
         user_input = int(input('> '))
+        if user_input == 1:
+            with CreateUserContextManager() as cu:
+                # User.register_new_user('mojtaba', 'aminzadeh', '123', '0936', 'abc@gmail.com')
+                cu.create_user('mojtaba', 'aminzadeh', '12345', '0936', 'abc@gmail.com')
+            if cu.err:
+                print(cu.err)

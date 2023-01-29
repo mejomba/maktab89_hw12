@@ -49,10 +49,6 @@ class User:
         pass
 
 
-class Admin(User):
-    pass
-
-
 class BankAccount():
     wage_amount = 100
     min_balance = 1000

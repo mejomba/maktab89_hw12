@@ -1,7 +1,7 @@
 import os
 from metro import User
 from admin import Admin
-from custom_contextmanager import CreateUserContextManager, SelectUserContextManager
+from custom_contextmanager import CreateUserContextManager, CreateBankAccountContextManager, SelectUserContextManager
 
 
 RED = "\033[0;31m"
@@ -58,8 +58,13 @@ if __name__ == "__main__":
                 email = input("email: ")
                 cu.create_user(first_name, last_name, password, phone, email)
                 if cu.user:
-                    user_input = int(input("balance for user bank account: "))
-                    cu.create_user_bank_account(user_input)
+                    with CreateBankAccountContextManager(cu.user) as ba:
+                        user_input = int(input("balance for user bank account: "))
+                        ba.create_user_bank_account(user_input)
+                    if ba.err:
+                        print(ba.err)
+                    elif ba.result:
+                        print(ba.result)
             if cu.err:
                 print(cu.err)
             elif cu.result:

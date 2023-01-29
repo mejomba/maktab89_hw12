@@ -18,7 +18,7 @@ class User:
         self.email = email
         self.id = uuid4().int
         self.is_authenticated = False
-        print("id in init", self.id)
+        self.have_bank_account = False
 
     @property
     def full_name(self):

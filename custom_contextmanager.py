@@ -22,23 +22,43 @@ class CreateUserContextManager:
 
     def create_user(self, first_name, last_name, password, phone, email):
         self.user = User.register_new_user(first_name, last_name, password, phone, email)
-        with open('users.pickle', 'ab') as pkl:
-            pickle.dump(self.user, pkl)
-        self.result = f'user {GREEN}{self.user.full_name}{END} create and save successfully'
-        if settings.DEBUG:
-            with open('debug.txt', 'a') as file:
-                print(self.user.full_name, self.user.id, file=file)
         print('after user create')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_val:
+            self.err = f'{RED}user register fail{END}\n{YELLOW}Hint:{END} {exc_val}'
+            return True
+        if not exc_type and self.user.have_bank_account:
+            with open('users.pickle', 'ab') as pkl:
+                pickle.dump(self.user, pkl)
+            self.result = f'user {GREEN}{self.user.full_name}{END} create and save successfully'
+            if settings.DEBUG:
+                with open('debug.txt', 'a') as file:
+                    print(self.user.full_name, self.user.id, file=file)
+        return True
+
+
+class CreateBankAccountContextManager:
+    def __init__(self, user: User):
+        self.bank_account = None
+        self.user = user
+        self.err = None
+        self.result = None
+
+    def __enter__(self):
+        return self
 
     def create_user_bank_account(self, balance):
         self.bank_account = BankAccount(self.user, balance)
         with open('bank.pickle', 'ab') as pkl:
             pickle.dump(self.bank_account, pkl)
         self.result = f'bank account create for user {GREEN}{self.user.full_name}{END} and save successfully'
+        self.user.have_bank_account = True
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_val:
-            self.err = f'{RED}user register fail{END}\n{YELLOW}Hint:{END} {exc_val}'
+        self.err = exc_val
+        if self.err:
+            self.err = f'{RED}create bank account fail{END}\n{YELLOW}Hint:{END} {exc_val}'
         return True
 
 

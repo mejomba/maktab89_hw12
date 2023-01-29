@@ -10,6 +10,16 @@ YELLOW = "\033[1;33m"
 END = "\033[0m"
 
 
+def read_all_data(file_name):
+    all_data = []
+    with open(file_name, 'rb') as file:
+        while True:
+            try:
+                all_data.append(pickle.load(file))
+            except EOFError:
+                return all_data
+
+
 class CreateUserContextManager:
     def __init__(self):
         self.user = None
@@ -32,6 +42,7 @@ class CreateUserContextManager:
             with open('users.pickle', 'ab') as pkl:
                 pickle.dump(self.user, pkl)
             self.result = f'user {GREEN}{self.user.full_name}{END} create and save successfully'
+
             if settings.DEBUG:
                 with open('debug.txt', 'a') as file:
                     print(self.user.full_name, self.user.id, file=file)
@@ -90,7 +101,48 @@ class SelectUserContextManager:
         self.result = User.login(self.user, password)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        # if exc_val:
-        #     self.err = f'{RED}user register fail{END}\n{YELLOW}Hint:{END} {exc_val}'
+        if exc_val:
+            self.err = f'{RED}user register fail{END}\n{YELLOW}Hint:{END} {exc_val}'
         return True
         pass
+
+
+class WithdrawContextManager:
+    def __init__(self, user: User, amount):
+        self.user = user
+        self.amount = amount
+        self.bank_account = None
+        self.err = None
+        self.result = None
+
+    def __enter__(self):
+        return self
+
+    def withdraw(self):
+        with open('bank.pickle', 'rb') as bank_file:
+            while True:
+                try:
+                    self.bank_account = pickle.load(bank_file)
+                    if self.bank_account.owner.id == self.user.id:
+                        self.bank_account.withdraw(self.amount)
+                        return
+                except EOFError:
+                    self.result = f'no bank account for {self.user}'
+                    return
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        print(self.bank_account.get_balance())
+        self.err = exc_val
+        if not self.err:
+            all_data = read_all_data('bank.pickle')
+            with open('bank.pickle', 'wb') as bank_file:
+                for idx, bank_account in enumerate(all_data):
+                    print(idx, bank_account)
+                    if bank_account.owner.id == self.user.id:
+                        all_data.remove(bank_account)
+                        all_data.insert(idx, self.bank_account)
+
+                for update_bank_account in all_data:
+                    pickle.dump(update_bank_account, bank_file)
+        else:
+            print(exc_val)

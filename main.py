@@ -1,7 +1,12 @@
 import os
 from metro import User
 from admin import Admin
-from custom_contextmanager import CreateUserContextManager, CreateBankAccountContextManager, SelectUserContextManager
+from custom_contextmanager import (
+    CreateUserContextManager,
+    CreateBankAccountContextManager,
+    SelectUserContextManager,
+    WithdrawContextManager
+)
 
 
 RED = "\033[0;31m"
@@ -29,6 +34,7 @@ bank_menu = {
     0: 'exit'
 }
 
+
 def clear():
     os.system('cls') if 'nt' in os.name else os.system('clear')
 
@@ -42,6 +48,15 @@ def show_menu(menu):
     print(f'========== {BLUE}{var_name(menu, globals())}{END} ==========')
     for k, v in menu.items():
         print(f'{k}: {v}')
+
+
+def withdraw(user, amount):
+    with WithdrawContextManager(user=user, amount=amount) as w:
+        w.withdraw()
+
+
+def deposit(user, value):
+    pass
 
 
 if __name__ == "__main__":
@@ -59,7 +74,7 @@ if __name__ == "__main__":
                 cu.create_user(first_name, last_name, password, phone, email)
                 if cu.user:
                     with CreateBankAccountContextManager(cu.user) as ba:
-                        user_input = int(input("balance for user bank account: "))
+                        user_input = int(input(f"balance for {GREEN}{cu.user.full_name}{END} bank account: "))
                         ba.create_user_bank_account(user_input)
                     if ba.err:
                         print(ba.err)
@@ -86,9 +101,13 @@ if __name__ == "__main__":
                             user_input = int(input('> '))
                             if user_input == 1:
                                 # ToDo "withdraw action"
+                                amount = int(input('balance for withdraw: '))
+                                withdraw(su.user, amount=amount)
                                 print('withdraw')
                             elif user_input == 2:
                                 # ToDo "deposit action"
+                                balance = int(input('balance for deposit: '))
+                                deposit(su.user, balance)
                                 print('deposit')
                             elif user_input == 0:
                                 # todo "exit"

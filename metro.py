@@ -1,5 +1,6 @@
 from hashlib import sha256
 from uuid import uuid4
+from custom_exception import MinBalanceException
 
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
@@ -73,42 +74,48 @@ class User:
 
 
 class BankAccount():
-    wage_amount = 100
-    min_balance = 1000
+    WAGE_AMOUNT = 100
+    MinBalance = 1000
 
     def __init__(self, owner: User, balance: int) -> None:
-        self.owner = owner
+        self.__owner = owner
         self.__balance = balance
 
     @property
     def owner(self):
         return self.__owner
-
-    @owner.setter
-    def owner(self, value):
-        try:
-            if isinstance(value, User):
-                self.__owner = User
-            else:
-                raise TypeError(f'{RED}owner must be a User{END}')
-        except TypeError as e:
-            print(f'ERR: {e}')
+    #
+    # @owner.setter
+    # def owner(self, value):
+    #     try:
+    #         if isinstance(value, User):
+    #             self.__owner = User
+    #         else:
+    #             raise TypeError(f'{RED}owner must be a User{END}')
+    #     except TypeError as e:
+    #         print(f'ERR: {e}')
 
     @property
     def balance(self):
         return self.__balance
 
-    def __check_min_balance(self) -> bool:
-        pass
+    def __check_min_balance(self, amount_to_withdraw) -> bool:
+        return (self.__balance - amount_to_withdraw) <= BankAccount.MinBalance
 
-    def withdraw(self) -> None:
-        pass
+    def withdraw(self, amount):  # برداشت وجه
+        if amount <= 0:
+            raise ValueError('amount must be positive')
+        if self.__check_min_balance(amount):
+            raise MinBalanceException("NOT Enough balance to withdraw!")
+        else:
+            self.__balance -= amount
+            self.__balance -= self.WAGE_AMOUNT  # برداشت کارمزد
 
     def deposit(self) -> None:
         pass
 
     def get_balance(self) -> int:
-        pass
+        return self.__balance
 
     def change_wage(self) -> None:
         pass

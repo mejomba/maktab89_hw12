@@ -1,4 +1,5 @@
 from hashlib import sha256
+from uuid import uuid4
 import os
 
 RED = "\033[0;31m"
@@ -9,7 +10,6 @@ END = "\033[0m"
 
 
 class User:
-    id = 0
 
     def __init__(self, first_name, last_name, password, phone, email):
         self.first_name = first_name
@@ -17,6 +17,7 @@ class User:
         self.__password = password
         self.phone = phone
         self.email = email
+        self.id = uuid4().int
 
     def get_info(self) -> str:
         pass

@@ -1,5 +1,5 @@
 from hashlib import sha256
-
+import os
 
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
@@ -102,7 +102,7 @@ class Passenger(User):
         pass
 
 
-menu = {
+main_menu = {
     1: 'register new user',
     2: 'manage bank account',
     3: 'buy ticket for travel',
@@ -114,3 +114,23 @@ administrator_menu = {
     2: 'edit travel',
     0: 'exit'
 }
+
+
+def clear():
+    os.system('cls') if 'nt' in os.name else os.system('clear')
+
+
+def namestr(obj, namespace):
+    return [name for name in namespace if namespace[name] is obj][0]
+
+
+def show_menu(menu):
+    clear()
+    print(f'========== {BLUE}{namestr(menu, globals())}{END} ==========')
+    for k, v in menu.items():
+        print(f'{k}: {v}')
+
+
+while True:
+    show_menu(main_menu)
+    user_input = int(input('> '))

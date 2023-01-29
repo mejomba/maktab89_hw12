@@ -17,6 +17,7 @@ class User:
         self.phone = phone
         self.email = email
         self.id = uuid4().int
+        self.is_authenticated = False
         print("id in init", self.id)
 
     @property
@@ -62,8 +63,13 @@ class User:
         else:
             return f'first_name, last_name, password, phone, email is {RED}required{END}'
 
-    def login(self) -> "User":
-        pass
+    def login(self, password) -> str:
+        valid_pass = self.__valid_pass('login password', password)
+        if valid_pass and self.__password == valid_pass:
+            self.is_authenticated = True
+            return f'login success as {self.full_name}'
+        else:
+            return f'login fail'
 
 
 class BankAccount():

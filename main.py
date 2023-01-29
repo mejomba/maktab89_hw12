@@ -1,7 +1,7 @@
 import os
 from metro import User
 from admin import Admin
-from custom_contextmanager import CreateUserContextManager
+from custom_contextmanager import CreateUserContextManager, SelectUserContextManager
 
 
 RED = "\033[0;31m"
@@ -23,6 +23,11 @@ administrator_menu = {
     0: 'exit'
 }
 
+bank_menu = {
+    1: 'withdraw',
+    2: 'deposit',
+    0: 'exit'
+}
 
 def clear():
     os.system('cls') if 'nt' in os.name else os.system('clear')
@@ -43,10 +48,47 @@ if __name__ == "__main__":
     while True:
         show_menu(main_menu)
         user_input = int(input('> '))
+
         if user_input == 1:
             with CreateUserContextManager() as cu:
-                cu.create_user('mojtaba', 'aminzadeh', '12345', '0936', 'abc@gmail.com')
+                first_name = input("first name: ")
+                last_name = input("last name: ")
+                password = input("password: ")
+                phone = input("phone: ")
+                email = input("email: ")
+                cu.create_user(first_name, last_name, password, phone, email)
+                if cu.user:
+                    user_input = int(input("balance for user bank account: "))
+                    cu.create_user_bank_account(user_input)
             if cu.err:
                 print(cu.err)
             elif cu.result:
                 print(cu.result)
+
+        elif user_input == 2:
+            with SelectUserContextManager() as su:
+                user_id = int(input('user id: '))
+                su.select_user(user_id=user_id)
+                print(su.result)
+                if su.user:
+                    input_password = input('your password: ')
+                    su.login_user(input_password)
+                    print(su.result)
+
+                    if su.user.is_authenticated:
+                        while True:
+                            show_menu(bank_menu)
+                            user_input = int(input('> '))
+                            if user_input == 1:
+                                # ToDo "withdraw action"
+                                print('withdraw')
+                            elif user_input == 2:
+                                # ToDo "deposit action"
+                                print('deposit')
+                            elif user_input == 0:
+                                # todo "exit"
+                                print('exit')
+                                break
+                            else:
+                                # todo "wrong input"
+                                print('wrong input')

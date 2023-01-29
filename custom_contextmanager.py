@@ -1,5 +1,6 @@
 from metro import User, BankAccount
 from admin import Admin
+import settings
 import pickle
 
 RED = "\033[0;31m"
@@ -24,6 +25,9 @@ class CreateUserContextManager:
         with open('users.pickle', 'ab') as pkl:
             pickle.dump(self.user, pkl)
         self.result = f'user {GREEN}{self.user.full_name}{END} create and save successfully'
+        if settings.DEBUG:
+            with open('debug.txt', 'a') as file:
+                print(self.user.full_name, self.user.id, file=file)
         print('after user create')
 
     def create_user_bank_account(self, balance):

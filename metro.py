@@ -19,6 +19,10 @@ class User:
         self.id = uuid4().int
         print("id in init", self.id)
 
+    @property
+    def full_name(self):
+        return f'{self.first_name} {self.last_name}'
+
     def get_info(self) -> str:
         pass
 

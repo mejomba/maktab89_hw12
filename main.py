@@ -45,7 +45,8 @@ if __name__ == "__main__":
         user_input = int(input('> '))
         if user_input == 1:
             with CreateUserContextManager() as cu:
-                # User.register_new_user('mojtaba', 'aminzadeh', '123', '0936', 'abc@gmail.com')
                 cu.create_user('mojtaba', 'aminzadeh', '12345', '0936', 'abc@gmail.com')
             if cu.err:
                 print(cu.err)
+            elif cu.result:
+                print(cu.result)

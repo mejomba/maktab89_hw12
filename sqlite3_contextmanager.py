@@ -105,3 +105,24 @@ class CreateUserContextManager:
             pass
 
 
+class CreateBankAccountContextManager:
+    def __init__(self, user):
+        self.user = user
+        self.bank = None
+        self.result = None
+        self.err = None
+
+    def __enter__(self):
+        return self
+
+    def create_bank_account_transaction(self, balance):
+        self.bank = BankAccount(owner=self.user, balance=balance)
+        print('after create bank')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_val:
+            self.err = f'create bank account fail\nHint: {exc_val}'
+            return True
+        elif not exc_val and self.bank is not None:
+            self.result = f'create bank account for {self.user.full_name} successfully'
+

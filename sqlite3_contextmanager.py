@@ -92,7 +92,7 @@ class CreateUserContextManager:
     def __enter__(self):
         return self
 
-    def create_user_transaction(self, first_name, last_name, password, phone, email):
+    def create_user(self, first_name, last_name, password, phone, email):
         self.user = User.register_new_user(first_name, last_name, password, phone, email)
         print('after create user')
 
@@ -102,7 +102,7 @@ class CreateUserContextManager:
             self.err = f'create user fail\nHint: {exc_val}'
             return True
         elif not exc_val and self.user is not None:
-            pass
+            self.result = f'create user {self.user.full_name} successfully'
 
 
 class CreateBankAccountContextManager:
@@ -115,7 +115,7 @@ class CreateBankAccountContextManager:
     def __enter__(self):
         return self
 
-    def create_bank_account_transaction(self, balance):
+    def create_bank_account(self, balance):
         self.bank = BankAccount(owner=self.user, balance=balance)
         print('after create bank')
 

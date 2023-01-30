@@ -8,6 +8,10 @@ from custom_contextmanager import (
     WithdrawContextManager
 )
 
+from sqlite3_contextmanager import (
+    CreateUserContextManager as CreateUser,
+    CreateBankAccountContextManager as CreateBankAccount,
+)
 
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
@@ -119,10 +123,15 @@ if __name__ == "__main__":
     show_menu(main_menu)
     user_input = int(input('> '))
     if user_input == 1:
-        pass
-    #             first_name = input("first name: ")
-    #             last_name = input("last name: ")
-    #             password = input("password: ")
-    #             phone = input("phone: ")
-    #             email = input("email: ")
-    #             cu.create_user(first_name, last_name, password, phone, email)
+        with CreateUser() as cu:
+            first_name = input("first name: ")
+            last_name = input("last name: ")
+            password = input("password: ")
+            phone = input("phone: ")
+            email = input("email: ")
+            cu.create_user(first_name, last_name, password, phone, email)
+            with CreateBankAccount(user=cu.user) as cb:
+                balance = int(input(f'balance for create {cu.user.full_name} bank account'))
+                cb.create_bank_account(balance)
+        if cu.user and cb.bank:
+            print('insert into data base.')

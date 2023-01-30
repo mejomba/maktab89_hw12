@@ -60,59 +60,69 @@ def deposit(user, value):
 
 
 if __name__ == "__main__":
-    while True:
-        show_menu(main_menu)
-        user_input = int(input('> '))
-
-        if user_input == 1:
-            with CreateUserContextManager() as cu:
-                first_name = input("first name: ")
-                last_name = input("last name: ")
-                password = input("password: ")
-                phone = input("phone: ")
-                email = input("email: ")
-                cu.create_user(first_name, last_name, password, phone, email)
-                if cu.user:
-                    with CreateBankAccountContextManager(cu.user) as ba:
-                        user_input = int(input(f"balance for {GREEN}{cu.user.full_name}{END} bank account: "))
-                        ba.create_user_bank_account(user_input)
-                    if ba.err:
-                        print(ba.err)
-                    elif ba.result:
-                        print(ba.result)
-            if cu.err:
-                print(cu.err)
-            elif cu.result:
-                print(cu.result)
-
-        elif user_input == 2:
-            with SelectUserContextManager() as su:
-                user_id = int(input('user id: '))
-                su.select_user(user_id=user_id)
-                print(su.result)
-                if su.user:
-                    input_password = input('your password: ')
-                    su.login_user(input_password)
-                    print(su.result)
-
-                    if su.user.is_authenticated:
-                        while True:
-                            show_menu(bank_menu)
-                            user_input = int(input('> '))
-                            if user_input == 1:
-                                # ToDo "withdraw action"
-                                amount = int(input('balance for withdraw: '))
-                                withdraw(su.user, amount=amount)
-                                print('withdraw')
-                            elif user_input == 2:
-                                # ToDo "deposit action"
-                                balance = int(input('balance for deposit: '))
-                                deposit(su.user, balance)
-                                print('deposit')
-                            elif user_input == 0:
-                                # todo "exit"
-                                print('exit')
-                                break
-                            else:
-                                # todo "wrong input"
-                                print('wrong input')
+    # while True:
+    #     show_menu(main_menu)
+    #     user_input = int(input('> '))
+    #
+    #     if user_input == 1:
+    #         with CreateUserContextManager() as cu:
+    #             first_name = input("first name: ")
+    #             last_name = input("last name: ")
+    #             password = input("password: ")
+    #             phone = input("phone: ")
+    #             email = input("email: ")
+    #             cu.create_user(first_name, last_name, password, phone, email)
+    #             if cu.user:
+    #                 with CreateBankAccountContextManager(cu.user) as ba:
+    #                     user_input = int(input(f"balance for {GREEN}{cu.user.full_name}{END} bank account: "))
+    #                     ba.create_user_bank_account(user_input)
+    #                 if ba.err:
+    #                     print(ba.err)
+    #                 elif ba.result:
+    #                     print(ba.result)
+    #         if cu.err:
+    #             print(cu.err)
+    #         elif cu.result:
+    #             print(cu.result)
+    #
+    #     elif user_input == 2:
+    #         with SelectUserContextManager() as su:
+    #             user_id = int(input('user id: '))
+    #             su.select_user(user_id=user_id)
+    #             print(su.result)
+    #             if su.user:
+    #                 input_password = input('your password: ')
+    #                 su.login_user(input_password)
+    #                 print(su.result)
+    #
+    #                 if su.user.is_authenticated:
+    #                     while True:
+    #                         show_menu(bank_menu)
+    #                         user_input = int(input('> '))
+    #                         if user_input == 1:
+    #                             # ToDo "withdraw action"
+    #                             amount = int(input('balance for withdraw: '))
+    #                             withdraw(su.user, amount=amount)
+    #                             print('withdraw')
+    #                         elif user_input == 2:
+    #                             # ToDo "deposit action"
+    #                             balance = int(input('balance for deposit: '))
+    #                             deposit(su.user, balance)
+    #                             print('deposit')
+    #                         elif user_input == 0:
+    #                             # todo "exit"
+    #                             print('exit')
+    #                             break
+    #                         else:
+    #                             # todo "wrong input"
+    #                             print('wrong input')
+    show_menu(main_menu)
+    user_input = int(input('> '))
+    if user_input == 1:
+        pass
+    #             first_name = input("first name: ")
+    #             last_name = input("last name: ")
+    #             password = input("password: ")
+    #             phone = input("phone: ")
+    #             email = input("email: ")
+    #             cu.create_user(first_name, last_name, password, phone, email)

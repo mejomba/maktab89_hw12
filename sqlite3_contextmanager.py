@@ -20,4 +20,6 @@ def create_tables():
         conn.commit()
 
 
+def insert_sql():
+    pass
 create_tables()

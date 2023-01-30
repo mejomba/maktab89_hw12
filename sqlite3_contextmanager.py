@@ -1,4 +1,5 @@
 import sqlite3
+from metro import User, BankAccount
 
 
 def create_tables():
@@ -74,11 +75,33 @@ def create_tables():
                     """
         cur.execute(query)
 
-        conn.commit()
-
 
 def insert_sql():
     pass
 
 
 # create_tables()
+
+class CreateUserContextManager:
+    def __init__(self):
+        self.user = None
+        self.bank = None
+        self.result = None
+        self.err = None
+
+    def __enter__(self):
+        return self
+
+    def create_user_transaction(self, first_name, last_name, password, phone, email):
+        self.user = User.register_new_user(first_name, last_name, password, phone, email)
+        print('after create user')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_val:
+            self.user = None
+            self.err = f'create user fail\nHint: {exc_val}'
+            return True
+        elif not exc_val and self.user is not None:
+            pass
+
+

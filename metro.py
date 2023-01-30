@@ -78,22 +78,22 @@ class BankAccount():
     MinBalance = 1000
 
     def __init__(self, owner: User, balance: int) -> None:
-        self.__owner = owner
+        self.owner = owner
         self.__balance = balance
 
     @property
     def owner(self):
         return self.__owner
-    #
-    # @owner.setter
-    # def owner(self, value):
-    #     try:
-    #         if isinstance(value, User):
-    #             self.__owner = User
-    #         else:
-    #             raise TypeError(f'{RED}owner must be a User{END}')
-    #     except TypeError as e:
-    #         print(f'ERR: {e}')
+
+    @owner.setter
+    def owner(self, value):
+        # try:
+        if isinstance(value, User):
+            self.__owner = User
+        else:
+            raise TypeError(f'owner must be a User')
+        # except TypeError as e:
+        #     print(f'ERR: {e}')
 
     @property
     def balance(self):

@@ -102,7 +102,7 @@ class CreateUserContextManager:
             self.err = f'create user fail\nHint: {exc_val}'
             return True
         elif not exc_val and self.user is not None:
-            pass
+            self.result = f'create user {self.user.full_name} successfully'
 
 
 class CreateBankAccountContextManager:

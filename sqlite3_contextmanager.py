@@ -85,9 +85,10 @@ def insert_sql():
 class CreateUserContextManager:
     def __init__(self):
         self.user = None
-        self.bank = None
         self.result = None
         self.err = None
+        self.exc_type = None
+        self.exc_val = None
 
     def __enter__(self):
         return self
@@ -97,6 +98,8 @@ class CreateUserContextManager:
         print('after create user')
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self.exc_type = exc_type
+        self.exc_val = exc_val
         if exc_val:
             self.user = None
             self.err = f'create user fail\nHint: {exc_val}'
@@ -111,6 +114,8 @@ class CreateBankAccountContextManager:
         self.bank = None
         self.result = None
         self.err = None
+        self.exc_type = None
+        self.exc_val = None
 
     def __enter__(self):
         return self
@@ -120,8 +125,10 @@ class CreateBankAccountContextManager:
         print('after create bank')
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self.exc_type = exc_type
+        self.exc_val = exc_val
         if exc_val:
-            self.err = f'create bank account fail\nHint: {exc_val}'
+            self.err = f'create bank account fail\nHint: {self.exc_val}'
             return True
         elif not exc_val and self.bank is not None:
             self.result = f'create bank account for {self.user.full_name} successfully'

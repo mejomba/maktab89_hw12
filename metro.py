@@ -11,13 +11,14 @@ END = "\033[0m"
 
 class User:
 
-    def __init__(self, first_name, last_name, password, phone, email):
+    def __init__(self, first_name, last_name, password, phone, email, role):
         self.first_name = first_name
         self.last_name = last_name
         self.__password = User.__valid_pass('password', password)
         self.phone = phone
         self.email = email
-        self.id = uuid4().int
+        self.uuid = str(uuid4().int)
+        self.role_id = role
         self.is_authenticated = False
         self.have_bank_account = False
 
@@ -48,7 +49,7 @@ class User:
         pass
 
     @classmethod
-    def register_new_user(cls, first_name, last_name, password, phone, email):
+    def register_new_user(cls, first_name, last_name, password, phone, email, role):
         """
         if username and password is valid call User class for initiate new User instance
         :param first_name: str form user input
@@ -58,11 +59,11 @@ class User:
         :param email: str optional from user input
         :return: None
         """
-        if first_name and last_name and password and phone and email:
-            user = cls(first_name, last_name, password, phone, email)
+        if first_name and last_name and password and phone and email and role:
+            user = cls(first_name, last_name, password, phone, email, role)
             return user
         else:
-            return f'first_name, last_name, password, phone, email is {RED}required{END}'
+            return f'first_name, last_name, password, phone, email, role is {RED}required{END}'
 
     def login(self, password) -> str:
         valid_pass = self.__valid_pass('login password', password)
@@ -72,8 +73,35 @@ class User:
         else:
             return f'login fail'
 
+    @staticmethod
+    def insert_to_database(user, conn, cur):
+        cur.execute('BEGIN TRANSACTION')
+        query = """INSERT INTO user (
+                    first_name, 
+                    last_name, 
+                    password, 
+                    phone, 
+                    email, 
+                    role_id, 
+                    uuid,
+                    is_authenticated, 
+                    have_bank_account) VALUES (?,?,?,?,?,?,?,?,?)
+                    """
+        data = (user.first_name,
+                user.last_name,
+                user.__password,
+                user.phone,
+                user.email,
+                user.role_id,
+                user.uuid,
+                user.is_authenticated,
+                user.have_bank_account
+                )
+        cur.execute(query, data)
+        return cur.lastrowid
 
-class BankAccount():
+
+class BankAccount:
     WAGE_AMOUNT = 100
     MinBalance = 1000
 
@@ -111,11 +139,29 @@ class BankAccount():
             self.__balance -= amount
             self.__balance -= self.WAGE_AMOUNT  # برداشت کارمزد
 
+    def insert_to_database(self, user, cur):
+        query = """
+            INSERT INTO bank_account (
+            owner_id, 
+            balance
+            ) VALUES (?,?)
+        """
+        data = (user.user_id, self.__balance)
+        cur.execute(query, data)
+        query = """
+            UPDATE user
+            SET have_bank_account=?
+            WHERE user_id=?
+        """
+        data = (1, user.user_id)
+        cur.execute(query, data)
+        # return cur.lastrowid
+
     def deposit(self) -> None:
         pass
 
-    def get_balance(self) -> int:
-        return self.__balance
+    # def get_balance(self) -> int:
+    #     return self.__balance
 
     def change_wage(self) -> None:
         pass

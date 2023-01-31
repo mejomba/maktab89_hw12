@@ -124,13 +124,13 @@ if __name__ == "__main__":
         show_menu(main_menu)
         user_input = int(input('> '))
         if user_input == 1:
+            role = int(input('role: (1: user, 2: admin): '))
             with CreateUser() as cu:
                 first_name = input("first name: ")
                 last_name = input("last name: ")
                 password = input("password: ")
                 phone = input("phone: ")
                 email = input("email: ")
-                role = int(input('role: (1: user, 2: admin): '))
                 cu.create_user(first_name, last_name, password, phone, email, role)
                 cu.insert_to_database()
                 with CreateBankAccount(user=cu.user, cur=cu.cur, conn=cu.conn) as cb:

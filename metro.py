@@ -49,7 +49,7 @@ class User:
         pass
 
     @classmethod
-    def register_new_user(cls, first_name, last_name, password, phone, email):
+    def register_new_user(cls, first_name, last_name, password, phone, email, role):
         """
         if username and password is valid call User class for initiate new User instance
         :param first_name: str form user input
@@ -59,11 +59,11 @@ class User:
         :param email: str optional from user input
         :return: None
         """
-        if first_name and last_name and password and phone and email:
-            user = cls(first_name, last_name, password, phone, email)
+        if first_name and last_name and password and phone and email and role:
+            user = cls(first_name, last_name, password, phone, email, role)
             return user
         else:
-            return f'first_name, last_name, password, phone, email is {RED}required{END}'
+            return f'first_name, last_name, password, phone, email, role is {RED}required{END}'
 
     def login(self, password) -> str:
         valid_pass = self.__valid_pass('login password', password)

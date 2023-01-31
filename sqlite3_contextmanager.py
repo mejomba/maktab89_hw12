@@ -89,13 +89,25 @@ class CreateUserContextManager:
         self.err = None
         self.exc_type = None
         self.exc_val = None
+        self.conn = None
+        self.cur = None
 
     def __enter__(self):
         return self
 
-    def create_user(self, first_name, last_name, password, phone, email):
-        self.user = User.register_new_user(first_name, last_name, password, phone, email)
+    def create_user(self, first_name, last_name, password, phone, email, role):
+        self.user = User.register_new_user(first_name, last_name, password, phone, email, role)
         print('after create user')
+
+    def insert_to_database(self):
+        if self.user:
+            self.user.user_id = None
+            self.conn = sqlite3.connect('metro.db')
+            self.cur = self.conn.cursor()
+            self.user.user_id = User.insert_to_database(self.user, self.conn, self.cur)
+            print(self.user.user_id)
+        else:
+            raise ValueError('user creation fail')
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.exc_type = exc_type
@@ -104,13 +116,17 @@ class CreateUserContextManager:
             self.user = None
             self.err = f'create user fail\nHint: {exc_val}'
             return True
-        elif not exc_val and self.user is not None:
+        elif not exc_val and self.user is not None and self.user.have_bank_account:
             self.result = f'create user {self.user.full_name} successfully'
+        elif not self.user.have_bank_account:
+            self.err = f"create user fail\nHint: user don't have bank account"
 
 
 class CreateBankAccountContextManager:
-    def __init__(self, user):
+    def __init__(self, user, cur, conn):
         self.user = user
+        self.cur = cur
+        self.conn = conn
         self.bank = None
         self.result = None
         self.err = None
@@ -124,12 +140,22 @@ class CreateBankAccountContextManager:
         self.bank = BankAccount(owner=self.user, balance=balance)
         print('after create bank')
 
+    def insert_to_database(self):
+        BankAccount.insert_to_database(self.bank, self.user, self.cur)
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.exc_type = exc_type
         self.exc_val = exc_val
         if exc_val:
             self.err = f'create bank account fail\nHint: {self.exc_val}'
+            self.cur.execute('ROLLBACK;')
+            self.cur.close()
+            self.conn.close()
             return True
         elif not exc_val and self.bank is not None:
+            self.conn.commit()
+            self.user.have_bank_account = True
+            self.cur.close()
+            self.conn.close()
             self.result = f'create bank account for {self.user.full_name} successfully'
 

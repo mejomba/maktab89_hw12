@@ -120,27 +120,30 @@ if __name__ == "__main__":
     #                         else:
     #                             # todo "wrong input"
     #                             print('wrong input')
-    show_menu(main_menu)
-    user_input = int(input('> '))
-    if user_input == 1:
-        with CreateUser() as cu:
-            first_name = input("first name: ")
-            last_name = input("last name: ")
-            password = input("password: ")
-            phone = input("phone: ")
-            email = input("email: ")
-            role = int(input('role: (1: user, 2: admin): '))
-            cu.create_user(first_name, last_name, password, phone, email, role)
-            with CreateBankAccount(user=cu.user) as cb:
-                balance = int(input(f'balance for create {cu.user.full_name} bank account'))
-                cb.create_bank_account(balance)
-            if cb.err:
-                print(cb.err)
-            elif cb.result:
-                print(cb.result)
-        if cu.err:
-            print(cu.err)
-        elif cu.result:
-            print(cu.result)
-        if cu.user and cb.bank:
-            print('insert into data base.')
+    while True:
+        show_menu(main_menu)
+        user_input = int(input('> '))
+        if user_input == 1:
+            with CreateUser() as cu:
+                first_name = input("first name: ")
+                last_name = input("last name: ")
+                password = input("password: ")
+                phone = input("phone: ")
+                email = input("email: ")
+                role = int(input('role: (1: user, 2: admin): '))
+                cu.create_user(first_name, last_name, password, phone, email, role)
+                cu.insert_to_database()
+                with CreateBankAccount(user=cu.user, cur=cu.cur, conn=cu.conn) as cb:
+                    balance = int(input(f'balance for create {cu.user.full_name} bank account'))
+                    cb.create_bank_account(balance)
+                    cb.insert_to_database()
+                if cb.err:
+                    print(cb.err)
+                elif cb.result:
+                    print(cb.result)
+            if cu.err:
+                print(cu.err)
+            elif cu.result:
+                print(cu.result)
+            if cu.user and cb.bank:
+                print('insert into data base.')

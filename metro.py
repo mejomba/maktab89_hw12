@@ -11,13 +11,14 @@ END = "\033[0m"
 
 class User:
 
-    def __init__(self, first_name, last_name, password, phone, email):
+    def __init__(self, first_name, last_name, password, phone, email, role):
         self.first_name = first_name
         self.last_name = last_name
         self.__password = User.__valid_pass('password', password)
         self.phone = phone
         self.email = email
         self.id = uuid4().int
+        self.role_id = role
         self.is_authenticated = False
         self.have_bank_account = False
 

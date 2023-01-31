@@ -129,9 +129,18 @@ if __name__ == "__main__":
             password = input("password: ")
             phone = input("phone: ")
             email = input("email: ")
-            cu.create_user(first_name, last_name, password, phone, email)
+            role = int(input('role: (1: user, 2: admin): '))
+            cu.create_user(first_name, last_name, password, phone, email, role)
             with CreateBankAccount(user=cu.user) as cb:
                 balance = int(input(f'balance for create {cu.user.full_name} bank account'))
                 cb.create_bank_account(balance)
+            if cb.err:
+                print(cb.err)
+            elif cb.result:
+                print(cb.result)
+        if cu.err:
+            print(cu.err)
+        elif cu.result:
+            print(cu.result)
         if cu.user and cb.bank:
             print('insert into data base.')

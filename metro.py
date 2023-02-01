@@ -12,6 +12,7 @@ END = "\033[0m"
 class User:
 
     def __init__(self, first_name, last_name, password, phone, email, role):
+        self.user_id = None
         self.first_name = first_name
         self.last_name = last_name
         self.__password = User.__valid_pass('password', password)
@@ -152,17 +153,20 @@ class BankAccount:
     def balance(self):
         return self.__balance
 
-    def __check_min_balance(self, amount_to_withdraw) -> bool:
-        return (self.__balance - amount_to_withdraw) <= BankAccount.MinBalance
+    @staticmethod
+    def __check_min_balance(balance, amount_to_withdraw) -> bool:
+        return (balance - amount_to_withdraw) <= BankAccount.MinBalance
 
-    def withdraw(self, amount):  # برداشت وجه
+    @staticmethod
+    def withdraw(balance, amount):  # برداشت وجه
         if amount <= 0:
             raise ValueError('amount must be positive')
-        if self.__check_min_balance(amount):
+        if BankAccount.__check_min_balance(balance, amount):
             raise MinBalanceException("NOT Enough balance to withdraw!")
         else:
-            self.__balance -= amount
-            self.__balance -= self.WAGE_AMOUNT  # برداشت کارمزد
+            balance -= amount
+            balance -= BankAccount.WAGE_AMOUNT  # برداشت کارمزد
+            return balance
 
     def insert_to_database(self, user, cur):
         query = """

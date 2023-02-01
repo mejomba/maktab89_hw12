@@ -1,16 +1,17 @@
 import os
 from metro import User
 from admin import create_super_user
-from custom_contextmanager import (
-    CreateUserContextManager,
-    CreateBankAccountContextManager,
-    SelectUserContextManager,
-    WithdrawContextManager
-)
+# from custom_contextmanager import (
+#     CreateUserContextManager,
+#     CreateBankAccountContextManager,
+#     SelectUserContextManager,
+#     WithdrawContextManager
+# )
 
 from sqlite3_contextmanager import (
     CreateUserContextManager as CreateUser,
     CreateBankAccountContextManager as CreateBankAccount,
+    WithdrawContextManager
 )
 
 RED = "\033[0;31m"
@@ -54,9 +55,9 @@ def show_menu(menu):
         print(f'{k}: {v}')
 
 
-def withdraw(user, amount):
-    with WithdrawContextManager(user=user, amount=amount) as w:
-        w.withdraw()
+# def withdraw(user, amount):
+#     with WithdrawContextManager(user=user, amount=amount) as w:
+#         w.withdraw()
 
 
 def deposit(user, value):
@@ -150,3 +151,12 @@ if __name__ == "__main__":
                     print(cu.result)
                 if cu.user and cb.bank:
                     print('insert into data base.')
+        elif user_input == 2:
+            with WithdrawContextManager() as wd:
+                user_id = int(input('user id: '))
+                balance = int(input('balance for withdraw'))
+                wd.withdraw(user_id, balance)
+            if wd.err:
+                print(wd.err)
+            if wd.result:
+                print(wd.result)

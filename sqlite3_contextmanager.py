@@ -199,3 +199,42 @@ class CreateSuperUserContextManager:
             self.cur.close()
             self.conn.close()
             self.result = f'create user {self.superuser.full_name} successfully'
+
+
+class WithdrawContextManager:
+    def __init__(self):
+        self.conn = sqlite3.connect('metro.db')
+        self.cur = self.conn.cursor()
+        self.err = None
+        self.result = None
+        self.user = None
+        self.balance = None
+        self.bank_account_id = None
+        self.user_id = None
+
+    def __enter__(self):
+        return self
+
+    def withdraw(self, user_id, amount):
+        query = """SELECT * FROM bank_account WHERE owner_id=?"""
+        self.bank_account_id, self.user_id, self.balance = self.cur.execute(query, (user_id,)).fetchone()
+        if self.user_id:
+            self.balance = BankAccount.withdraw(self.balance, amount)
+            query = """
+                    UPDATE bank_account
+                    SET balance=?
+                    WHERE id=? and owner_id=?
+                    """
+            self.cur.execute(query, (self.balance, self.bank_account_id, self.user_id))
+        else:
+            raise TypeError('user not found')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_val:
+            self.err = f'withdraw fail\nHint: {exc_val}'
+        else:
+            self.conn.commit()
+            self.cur.close()
+            self.conn.close()
+            self.result = f'withdraw success\n new balance: {self.balance}'
+        return True

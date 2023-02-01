@@ -74,31 +74,56 @@ class User:
             return f'login fail'
 
     @staticmethod
-    def insert_to_database(user, conn, cur):
-        cur.execute('BEGIN TRANSACTION')
-        query = """INSERT INTO user (
-                    first_name, 
-                    last_name, 
-                    password, 
-                    phone, 
-                    email, 
-                    role_id, 
-                    uuid,
-                    is_authenticated, 
-                    have_bank_account) VALUES (?,?,?,?,?,?,?,?,?)
-                    """
-        data = (user.first_name,
-                user.last_name,
-                user.__password,
-                user.phone,
-                user.email,
-                user.role_id,
-                user.uuid,
-                user.is_authenticated,
-                user.have_bank_account
-                )
-        cur.execute(query, data)
-        return cur.lastrowid
+    def insert_to_database(user, cur):
+        if user.role_id == 2:
+            query = """INSERT INTO user (
+                        first_name, 
+                        last_name, 
+                        password, 
+                        phone, 
+                        email, 
+                        role_id, 
+                        uuid,
+                        is_authenticated, 
+                        have_bank_account) VALUES (?,?,?,?,?,?,?,?,?)
+                        """
+            data = (user.first_name,
+                    user.last_name,
+                    user.__password,
+                    user.phone,
+                    user.email,
+                    user.role_id,
+                    user.uuid,
+                    user.is_authenticated,
+                    user.have_bank_account
+                    )
+            cur.execute(query, data)
+            return cur.lastrowid
+        elif user.role_id == 1:
+            cur.execute('BEGIN TRANSACTION')
+            query = """INSERT INTO user (
+                                    first_name, 
+                                    last_name, 
+                                    password, 
+                                    phone, 
+                                    email, 
+                                    role_id, 
+                                    uuid,
+                                    is_authenticated, 
+                                    have_bank_account) VALUES (?,?,?,?,?,?,?,?,?)
+                                    """
+            data = (user.first_name,
+                    user.last_name,
+                    user.__password,
+                    user.phone,
+                    user.email,
+                    user.role_id,
+                    user.uuid,
+                    user.is_authenticated,
+                    user.have_bank_account
+                    )
+            cur.execute(query, data)
+            return cur.lastrowid
 
 
 class BankAccount:

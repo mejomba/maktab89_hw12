@@ -1,5 +1,5 @@
 from metro import User, BankAccount
-from admin import Admin
+# from admin import Admin
 import settings
 import pickle
 from sqlite3_contextmanager import insert_sql

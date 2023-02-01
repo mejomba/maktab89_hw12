@@ -104,7 +104,7 @@ class CreateUserContextManager:
             self.user.user_id = None
             self.conn = sqlite3.connect('metro.db')
             self.cur = self.conn.cursor()
-            self.user.user_id = User.insert_to_database(self.user, self.conn, self.cur)
+            self.user.user_id = User.insert_to_database(self.user, self.cur)
             print(self.user.user_id)
         else:
             raise ValueError('user creation fail')
@@ -159,3 +159,43 @@ class CreateBankAccountContextManager:
             self.conn.close()
             self.result = f'create bank account for {self.user.full_name} successfully'
 
+
+class CreateSuperUserContextManager:
+    def __init__(self):
+        self.superuser = None
+        self.result = None
+        self.err = None
+        self.exc_type = None
+        self.exc_val = None
+        self.conn = None
+        self.cur = None
+
+    def __enter__(self):
+        return self
+
+    def create_superuser(self, first_name, last_name, password, phone, email, role):
+        self.superuser = User.register_new_user(first_name, last_name, password, phone, email, role)
+        print('after create superuser')
+
+    def insert_to_database(self):
+        if self.superuser:
+            self.superuser.user_id = None
+            self.conn = sqlite3.connect('metro.db')
+            self.cur = self.conn.cursor()
+            self.superuser.user_id = User.insert_to_database(self.superuser, self.cur)
+            print(self.superuser.user_id)
+        else:
+            raise ValueError('user creation fail')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.exc_type = exc_type
+        self.exc_val = exc_val
+        if exc_val:
+            self.superuser = None
+            self.err = f'create superuser fail\nHint: {exc_val}'
+            return True
+        elif not exc_val and self.superuser is not None:
+            self.conn.commit()
+            self.cur.close()
+            self.conn.close()
+            self.result = f'create user {self.superuser.full_name} successfully'

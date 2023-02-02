@@ -77,8 +77,15 @@ def create_tables():
 
 
 def insert_sql():
-    pass
+    with sqlite3.connect('metro.db') as conn:
+        cur = conn.cursor()
+        query = """INSERT INTO cart_type  
+                (cart_type) VALUES (1), (2), (3)
+                ;                
+                """
+        cur.execute(query)
 
+insert_sql()
 
 # create_tables()
 def login_to_bank(user_id):
@@ -287,3 +294,20 @@ class DepositContextManager:
             self.result = f'deposit success\nyour new balance: {self.new_balance}'
         return True
 
+
+class BuyTicketContextManager:
+    def __init__(self):
+        self.conn = sqlite3.connect('metro.db')
+        self.cur = self.conn.cursor()
+        self.err = None
+        self.result = None
+        self.user = None
+
+    def __enter__(self):
+        return self
+
+    def get_ticket(self, user_id, cart_type):
+        pass
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass

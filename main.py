@@ -13,6 +13,7 @@ from sqlite3_contextmanager import (
     CreateBankAccountContextManager as CreateBankAccount,
     WithdrawContextManager,
     DepositContextManager,
+    BuyTicketContextManager,
     login_to_bank
 )
 
@@ -175,3 +176,9 @@ if __name__ == "__main__":
                         print(de.err)
                     if de.result:
                         print(de.result)
+        elif user_input == 3:
+            print('buy ticket')
+            user_id = int(input('user id: '))
+            cart_type = int(input('cart type: '))
+            with BuyTicketContextManager() as buy:
+                buy.get_ticket(user_id, cart_type)

@@ -238,3 +238,26 @@ class WithdrawContextManager:
             self.conn.close()
             self.result = f'withdraw success\n new balance: {self.balance}'
         return True
+
+
+class DepositContextManager:
+    def __init__(self):
+        self.conn = sqlite3.connect('metro.db')
+        self.cur = self.conn.cursor()
+        self.err = None
+        self.result = None
+        self.user = None
+        self.bank_account_id = None
+        self.user_id = None
+        self.balance = None
+
+    def __enter__(self):
+        return self
+
+    def deposit(self, amount):
+        query = """SELECT * FROM bank_account WHERE owner_id=?"""
+        self.bank_account_id, self.user_id, self.balance = self.cur.execute(query, (user_id,)).fetchone()
+        BankAccount.deposit(self.balance, amount)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass

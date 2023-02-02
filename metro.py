@@ -186,8 +186,12 @@ class BankAccount:
         cur.execute(query, data)
         # return cur.lastrowid
 
-    def deposit(self) -> None:
-        pass
+    @staticmethod
+    def deposit(balance, amount) -> int:
+        if amount <= 0:
+            raise ValueError('amount must be positive')
+        else:
+            return balance + amount
 
     # def get_balance(self) -> int:
     #     return self.__balance

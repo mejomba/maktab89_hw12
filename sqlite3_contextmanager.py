@@ -81,6 +81,14 @@ def insert_sql():
 
 
 # create_tables()
+def login_to_bank(user_id):
+    with sqlite3.connect('metro.db') as conn:
+        cur = conn.cursor()
+        query = "SELECT * FROm bank_account WHERE owner_id=?"
+        data = (user_id,)
+        print(cur.execute(query, data).fetchone())
+        return cur.execute(query, data).fetchone()
+
 
 class CreateUserContextManager:
     def __init__(self):
@@ -241,23 +249,41 @@ class WithdrawContextManager:
 
 
 class DepositContextManager:
-    def __init__(self):
+    def __init__(self, pk, user_id, balance):
+        self.pk = pk
+        self.user_id = user_id
+        self.balance = balance
         self.conn = sqlite3.connect('metro.db')
         self.cur = self.conn.cursor()
         self.err = None
         self.result = None
         self.user = None
-        self.bank_account_id = None
-        self.user_id = None
-        self.balance = None
+        self.new_balance = None
 
     def __enter__(self):
         return self
 
     def deposit(self, amount):
-        query = """SELECT * FROM bank_account WHERE owner_id=?"""
-        self.bank_account_id, self.user_id, self.balance = self.cur.execute(query, (user_id,)).fetchone()
-        BankAccount.deposit(self.balance, amount)
+        self.cur.execute("BEGIN TRANSACTION")
+        self.new_balance = BankAccount.deposit(self.balance, amount)
+        query = """
+                    UPDATE bank_account
+                    SET balance=?
+                    WHERE owner_id=?
+                    """
+        data = (self.new_balance, self.user_id)
+        self.cur.execute(query, data)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        pass
+        if exc_val:
+            self.cur.execute('ROLLBACK')
+            self.cur.close()
+            self.conn.close()
+            self.err = f'deposit fail\n{exc_val}'
+        else:
+            self.conn.commit()
+            self.cur.close()
+            self.conn.close()
+            self.result = f'deposit success\nyour new balance: {self.new_balance}'
+        return True
+

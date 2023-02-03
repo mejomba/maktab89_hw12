@@ -26,7 +26,7 @@ def create_tables():
                 """
         cur.execute(query)
 
-        query = """CREATE TABLE bank_account 
+        query = """CREATE TABLE IF NOT EXISTS bank_account 
                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
                  owner_id INTEGER, 
                  balance INTEGER, 
@@ -35,26 +35,34 @@ def create_tables():
                 """
         cur.execute(query)
 
-        query = """CREATE TABLE cart_type 
+        query = """CREATE TABLE IF NOT EXISTS cart_type 
                 (cart_type_id INTEGER PRIMARY KEY AUTOINCREMENT, 
                 cart_type INTEGER
                 );                
                 """
         cur.execute(query)
 
-        query = """CREATE TABLE cart 
+        query = """CREATE TABLE IF NOT EXISTS cart 
                 (cart_id INTEGER PRIMARY KEY AUTOINCREMENT, 
                  credit INTEGER, 
                  expire_date text, 
                  cart_type_id INTEGER, 
-                 user_id INTEGER,
                  FOREIGN KEY(cart_type_id) REFERENCES cart_type(cart_type_id),
-                 FOREIGN KEY(user_id) REFERENCES user(user_id)
                 );                
                 """
         cur.execute(query)
 
-        query = """CREATE TABLE travel 
+        query = """CREATE TABLE IF NOT EXISTS user_cart
+                    (user_cart_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER,
+                    cart_id INTEGER,
+                    FOREIGN KEY(user_id) REFERENCES user(user_id),
+                    FOREIGN KEY(cart_id) REFERENCES cart(cart_id)
+                    );
+                    """
+        cur.execute(query)
+
+        query = """CREATE TABLE IF NOT EXISTS travel 
                     (travel_id INTEGER PRIMARY KEY AUTOINCREMENT, 
                     price INTEGER, 
                     start_time text, 
@@ -65,7 +73,7 @@ def create_tables():
 
         cur.execute(query)
 
-        query = """CREATE TABLE user_travel 
+        query = """CREATE TABLE IF NOT EXISTS user_travel 
                     (user_travel_id INTEGER PRIMARY KEY AUTOINCREMENT, 
                     user_id INTEGER, 
                     travel_id INTEGER, 
@@ -85,9 +93,10 @@ def insert_sql():
                 """
         cur.execute(query)
 
-insert_sql()
+# insert_sql()
 
 # create_tables()
+
 def login_to_bank(user_id):
     with sqlite3.connect('metro.db') as conn:
         cur = conn.cursor()
@@ -218,8 +227,9 @@ class CreateSuperUserContextManager:
 
 class WithdrawContextManager:
     def __init__(self):
-        self.conn = sqlite3.connect('metro.db')
-        self.cur = self.conn.cursor()
+        self.conn = None
+        self.cur = None
+        self.local_connection = None
         self.err = None
         self.result = None
         self.user = None
@@ -230,7 +240,16 @@ class WithdrawContextManager:
     def __enter__(self):
         return self
 
-    def withdraw(self, user_id, amount):
+    def withdraw(self, user_id, amount, conn=None, cur=None):
+        if conn and cur:
+            self.conn = conn
+            self.cur = cur
+            self.local_connection = False
+        else:
+            self.conn = sqlite3.connect('metro.db')
+            self.cur = self.conn.cursor()
+            self.local_connection = True
+
         query = """SELECT * FROM bank_account WHERE owner_id=?"""
         self.bank_account_id, self.user_id, self.balance = self.cur.execute(query, (user_id,)).fetchone()
         if self.user_id:
@@ -240,18 +259,25 @@ class WithdrawContextManager:
                     SET balance=?
                     WHERE id=? and owner_id=?
                     """
-            self.cur.execute(query, (self.balance, self.bank_account_id, self.user_id))
+            data = (self.balance, self.bank_account_id, self.user_id)
+            self.cur.execute(query, data)
         else:
             raise TypeError('user not found')
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_val:
             self.err = f'withdraw fail\nHint: {exc_val}'
-        else:
+            if self.local_connection:
+                self.cur.close()
+                self.conn.close()
+        elif self.local_connection:
             self.conn.commit()
             self.cur.close()
             self.conn.close()
             self.result = f'withdraw success\n new balance: {self.balance}'
+        else:
+            self.result = f'withdraw success\n new balance: {self.balance}'
+
         return True
 
 
@@ -302,12 +328,40 @@ class BuyTicketContextManager:
         self.err = None
         self.result = None
         self.user = None
+        self.user_balance = None
 
     def __enter__(self):
         return self
 
     def get_ticket(self, user_id, cart_type):
-        pass
+        cart_price = None
+        self.cur.execute("BEGIN TRANSACTION")
+        query = """SELECT credit FROM cart
+                    WHERE cart_type_id=?
+                """
+        data = (cart_type,)
+        cart_price = self.cur.execute(query, data).fetchone()[0]
+
+        with WithdrawContextManager() as wd:
+            wd.withdraw(user_id, amount=cart_price, conn=self.conn, cur=self.cur)
+        if wd.err:
+            print(wd.err)
+            raise Exception('TODO: create buy ticket exception')
+        if wd.result:
+            print(wd.result)
+        query = """INSERT INTO user_cart (user_id, cart_id)
+                    VALUES(?,?)
+                """
+        data = user_id, cart_type
+        self.cur.execute(query, data)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        pass
+        if exc_val:
+            self.cur.execute("ROLLBACK")
+            self.err = f'buy ticket fail\nHint: {exc_val}'
+        else:
+            self.conn.commit()
+            self.cur.close()
+            self.conn.close()
+            self.result = f'buy ticket'
+        return True

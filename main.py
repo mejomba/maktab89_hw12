@@ -182,3 +182,7 @@ if __name__ == "__main__":
             cart_type = int(input('cart type: '))
             with BuyTicketContextManager() as buy:
                 buy.get_ticket(user_id, cart_type)
+            if buy.err:
+                print(buy.err)
+            if buy.result:
+                print(buy.result)

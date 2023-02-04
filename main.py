@@ -159,24 +159,30 @@ if __name__ == "__main__":
             user_id = int(input('user id: '))
             if data := login_to_bank(user_id):
                 pk, owner_id, balance = data
-                show_menu(bank_menu)
-                user_input = int(input("> "))
-                if user_input == 1:
-                    with WithdrawContextManager() as wd:
-                        amount = int(input('amount for withdraw'))
-                        wd.withdraw(owner_id, amount)
-                    if wd.err:
-                        print(wd.err)
-                    if wd.result:
-                        print(wd.result)
-                elif user_input == 2:
-                    amount = int(input('amount for deposit'))
-                    with DepositContextManager(pk, owner_id, balance) as de:
-                        de.deposit(amount)
-                    if de.err:
-                        print(de.err)
-                    if de.result:
-                        print(de.result)
+                while True:
+                    show_menu(bank_menu)
+                    user_input = int(input("> "))
+                    if user_input == 1:
+                        with WithdrawContextManager() as wd:
+                            amount = int(input('amount for withdraw'))
+                            wd.withdraw(owner_id, amount)
+                        if wd.err:
+                            print(wd.err)
+                        if wd.result:
+                            print(wd.result)
+                    elif user_input == 2:
+                        amount = int(input('amount for deposit'))
+                        with DepositContextManager(pk, owner_id, balance) as de:
+                            de.deposit(amount)
+                        if de.err:
+                            print(de.err)
+                        if de.result:
+                            print(de.result)
+                    elif user_input == 0:
+                        print('exit')
+                        break
+                    else:
+                        print('wrong input')
         elif user_input == 3:
             print('buy ticket')
             user_id = int(input('user id: '))
@@ -192,4 +198,20 @@ if __name__ == "__main__":
             admin_id = int(input('admin id: '))
             admin_password = input('password: ')
             if login_super_user(user_id=admin_id, password=admin_password):
-                show_menu(administrator_menu)
+                while True:
+                    show_menu(administrator_menu)
+                    user_input = int(input('> '))
+                    if user_input == 1:
+                        print('submit travel')
+                    elif user_input == 2:
+                        print('edit travel')
+                    elif user_input == 0:
+                        print('exit')
+                        break
+                    else:
+                        print('wrong input')
+        elif user_input == 0:
+            print('exit')
+            break
+        else:
+            print('wrong input')

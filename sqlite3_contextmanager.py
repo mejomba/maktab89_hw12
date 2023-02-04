@@ -1,5 +1,6 @@
 import sqlite3
 from metro import User, BankAccount
+from custom_exception import WrongPasswordException, AccessDeniedException
 
 
 def create_tables():
@@ -364,4 +365,74 @@ class BuyTicketContextManager:
             self.cur.close()
             self.conn.close()
             self.result = f'buy ticket'
+        return True
+
+
+class LoginContextManager:
+    def __init__(self):
+        self.conn = None
+        self.cur = None
+        self.local_connection = None
+        self.err = None
+        self.result = None
+        self.user = None
+        self.first_name = None
+        self.last_name = None
+        # self.balance = None
+        # self.bank_account_id = None
+        # self.user_id = None
+
+    def __enter__(self):
+        return self
+
+    def login(self, user_id, password, conn=None, cur=None):
+        if conn and cur:
+            self.conn = conn
+            self.cur = cur
+            self.local_connection = False
+        else:
+            self.conn = sqlite3.connect('metro.db')
+            self.cur = self.conn.cursor()
+            self.local_connection = True
+
+        query = """
+                SELECT first_name, last_name, password, role_id, is_authenticated FROM user
+                WHERE user_id=?
+        """
+        data = (user_id,)
+
+        if self.local_connection:
+            self.cur.execute("BEGIN TRANSACTION")
+
+        self.first_name, self.last_name, hash_password, role_id, is_authenticated = self.cur.execute(query, data).fetchone()
+        print(self.first_name, self.last_name, hash_password, role_id, is_authenticated)
+        if role_id != 2:
+            raise AccessDeniedException(f'user_id {user_id} not admin')
+        if User.login(password, hash_password):
+            is_authenticated = 1
+            query = """
+                    UPDATE user
+                    SET is_authenticated=?
+                    WHERE user_id=?
+            """
+            data = (is_authenticated, user_id)
+            self.cur.execute(query, data)
+        else:
+            raise WrongPasswordException('wrong password')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_val:
+            self.err = f'login fail\nHint: {exc_val}'
+            if self.local_connection:
+                self.cur.execute("ROLLBACK")
+                self.cur.close()
+                self.conn.close()
+        elif self.local_connection:
+            self.conn.commit()
+            self.cur.close()
+            self.conn.close()
+            self.result = f'login success\n welcome: {self.first_name} {self.last_name}'
+        else:
+            self.result = f'login success\n welcome: {self.user.full_name}'
+
         return True

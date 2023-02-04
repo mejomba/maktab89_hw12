@@ -11,7 +11,10 @@ from admin import create_super_user
 from sqlite3_contextmanager import (
     CreateUserContextManager as CreateUser,
     CreateBankAccountContextManager as CreateBankAccount,
-    WithdrawContextManager
+    WithdrawContextManager,
+    DepositContextManager,
+    BuyTicketContextManager,
+    login_to_bank
 )
 
 RED = "\033[0;31m"
@@ -152,11 +155,34 @@ if __name__ == "__main__":
                 if cu.user and cb.bank:
                     print('insert into data base.')
         elif user_input == 2:
-            with WithdrawContextManager() as wd:
-                user_id = int(input('user id: '))
-                balance = int(input('balance for withdraw'))
-                wd.withdraw(user_id, balance)
-            if wd.err:
-                print(wd.err)
-            if wd.result:
-                print(wd.result)
+            user_id = int(input('user id: '))
+            if data := login_to_bank(user_id):
+                pk, owner_id, balance = data
+                show_menu(bank_menu)
+                user_input = int(input("> "))
+                if user_input == 1:
+                    with WithdrawContextManager() as wd:
+                        amount = int(input('amount for withdraw'))
+                        wd.withdraw(owner_id, amount)
+                    if wd.err:
+                        print(wd.err)
+                    if wd.result:
+                        print(wd.result)
+                elif user_input == 2:
+                    amount = int(input('amount for deposit'))
+                    with DepositContextManager(pk, owner_id, balance) as de:
+                        de.deposit(amount)
+                    if de.err:
+                        print(de.err)
+                    if de.result:
+                        print(de.result)
+        elif user_input == 3:
+            print('buy ticket')
+            user_id = int(input('user id: '))
+            cart_type = int(input('cart type: '))
+            with BuyTicketContextManager() as buy:
+                buy.get_ticket(user_id, cart_type)
+            if buy.err:
+                print(buy.err)
+            if buy.result:
+                print(buy.result)

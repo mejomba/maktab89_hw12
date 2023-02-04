@@ -16,6 +16,7 @@ from sqlite3_contextmanager import (
     BuyTicketContextManager,
     login_to_bank
 )
+from admin import login_super_user
 
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
@@ -186,3 +187,9 @@ if __name__ == "__main__":
                 print(buy.err)
             if buy.result:
                 print(buy.result)
+        elif user_input == 4:
+            print('admin')
+            admin_id = int(input('admin id: '))
+            admin_password = input('password: ')
+            if login_super_user(user_id=admin_id, password=admin_password):
+                show_menu(administrator_menu)

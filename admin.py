@@ -1,5 +1,9 @@
 from metro import User
-from sqlite3_contextmanager import CreateSuperUserContextManager as CreateSuperUser
+from sqlite3_contextmanager import (
+    CreateSuperUserContextManager as CreateSuperUser,
+    LoginContextManager as Login
+)
+from metro import User
 
 
 def create_super_user():
@@ -16,3 +20,13 @@ def create_super_user():
         print(cu.err)
     elif cu.result:
         print(cu.result)
+
+
+def login_super_user(user_id, password):
+    with Login() as login:
+        login.login(user_id, password)
+    if login.err:
+        print(login.err)
+    if login.result:
+        print(login.result)
+        return True

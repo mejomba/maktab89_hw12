@@ -66,13 +66,15 @@ class User:
         else:
             return f'first_name, last_name, password, phone, email, role is {RED}required{END}'
 
-    def login(self, password) -> str:
-        valid_pass = self.__valid_pass('login password', password)
-        if valid_pass and self.__password == valid_pass:
-            self.is_authenticated = True
-            return f'login success as {self.full_name}'
+    @classmethod
+    def login(cls, password, hash_password) -> bool:
+        valid_pass = cls.__valid_pass('login password', password)
+        if valid_pass and hash_password == valid_pass:
+            # self.is_authenticated = True
+            # return f'login success as {self.full_name}'
+            return True
         else:
-            return f'login fail'
+            return False
 
     @staticmethod
     def insert_to_database(user, cur):

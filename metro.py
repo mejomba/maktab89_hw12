@@ -230,3 +230,19 @@ class Travel:
             raise InvalidPriceValue("price value must be positive")
         is_active = Travel.is_active(t[1])
         return p, t[0], t[1], is_active
+
+
+class Cart:
+    def __init__(self, cart_type, credit=None, expire_date=None):
+        self.cart_type = cart_type
+        self.credit = credit
+        self.expire_date = expire_date
+
+    @classmethod
+    def create_cart(cls, cart_type, credit, expire_date):
+        if cart_type == 1:
+            return cls(cart_type, credit, None)
+        elif cart_type == 2:
+            return cls(cart_type, credit, None)
+        elif cart_type == 3:
+            return cls(cart_type, credit, expire_date)

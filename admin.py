@@ -3,6 +3,7 @@ from sqlite3_contextmanager import (
     CreateSuperUserContextManager as CreateSuperUser,
     AuthContextManager as Auth,
     TravelContextManager as Travel,
+    CartContextManager as Cart,
 )
 from metro import User
 
@@ -61,3 +62,9 @@ def logout_super_user(user_id):
         print(logout.err)
     if logout.result:
         print(logout.result)
+
+
+def create_cart():
+    # todo add unique constraint to cart_type_id
+    with Cart() as cart:
+        cart.create_cart()

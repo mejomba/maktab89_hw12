@@ -16,7 +16,13 @@ from sqlite3_contextmanager import (
     BuyTicketContextManager,
     login_to_bank
 )
-from admin import login_super_user, submit_travel, edit_travel, logout_super_user
+from admin import (
+    login_super_user,
+    submit_travel,
+    edit_travel,
+    logout_super_user,
+    create_cart,
+)
 
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
@@ -34,6 +40,7 @@ main_menu = {
 administrator_menu = {
     1: 'submit travel',
     2: 'edit travel',
+    3: 'add cart',
     0: 'exit'
 }
 
@@ -68,93 +75,113 @@ def deposit(user, value):
     pass
 
 
+def create_regular_user():
+    with CreateUser() as cu:
+        first_name = input("first name: ")
+        last_name = input("last name: ")
+        password = input("password: ")
+        phone = input("phone: ")
+        email = input("email: ")
+        cu.create_user(first_name, last_name, password, phone, email, role)
+        cu.insert_to_database()
+        with CreateBankAccount(user=cu.user, cur=cu.cur, conn=cu.conn) as cb:
+            balance = int(input(f'balance for create {cu.user.full_name} bank account'))
+            cb.create_bank_account(balance)
+            cb.insert_to_database()
+        if cb.err:
+            print(cb.err)
+        elif cb.result:
+            print(cb.result)
+    if cu.err:
+        print(cu.err)
+    elif cu.result:
+        print(cu.result)
+    if cu.user and cb.bank:
+        print('Done')
+
+
+def manage_bank_account():
+    while True:
+        show_menu(bank_menu)
+        user_input = int(input("> "))
+        if user_input == 1:
+            with WithdrawContextManager() as wd:
+                amount = int(input('amount for withdraw'))
+                wd.withdraw(owner_id, amount)
+            if wd.err:
+                print(wd.err)
+            if wd.result:
+                print(wd.result)
+        elif user_input == 2:
+            amount = int(input('amount for deposit'))
+            with DepositContextManager(pk, owner_id, balance) as de:
+                de.deposit(amount)
+            if de.err:
+                print(de.err)
+            if de.result:
+                print(de.result)
+        elif user_input == 0:
+            print('exit')
+            return
+        else:
+            print('wrong input')
+
+
+def buy_ticket():
+    user_id = int(input('user id: '))
+    cart_type = int(input('cart type: '))
+    with BuyTicketContextManager() as buy:
+        buy.get_ticket(user_id, cart_type)
+    if buy.err:
+        print(buy.err)
+    if buy.result:
+        print(buy.result)
+
+
+def admin_panel():
+    while True:
+        show_menu(administrator_menu)
+        user_input = int(input('> '))
+        if user_input == 1:
+            submit_travel()
+        elif user_input == 2:
+            edit_travel()
+        elif user_input == 3:
+            create_cart()
+        elif user_input == 0:
+            print('exit')
+            logout_super_user(admin_id)
+            return
+        else:
+            print('wrong input')
+
+
 if __name__ == "__main__":
     while True:
         show_menu(main_menu)
         user_input = int(input('> '))
+
         if user_input == 1:
             role = int(input('role: (1: user, 2: admin): '))
             if role == 2:
                 create_super_user()
             elif role == 1:
-                with CreateUser() as cu:
-                    first_name = input("first name: ")
-                    last_name = input("last name: ")
-                    password = input("password: ")
-                    phone = input("phone: ")
-                    email = input("email: ")
-                    cu.create_user(first_name, last_name, password, phone, email, role)
-                    cu.insert_to_database()
-                    with CreateBankAccount(user=cu.user, cur=cu.cur, conn=cu.conn) as cb:
-                        balance = int(input(f'balance for create {cu.user.full_name} bank account'))
-                        cb.create_bank_account(balance)
-                        cb.insert_to_database()
-                    if cb.err:
-                        print(cb.err)
-                    elif cb.result:
-                        print(cb.result)
-                if cu.err:
-                    print(cu.err)
-                elif cu.result:
-                    print(cu.result)
-                if cu.user and cb.bank:
-                    print('insert into data base.')
+                create_regular_user()
+
         elif user_input == 2:
             user_id = int(input('user id: '))
             if data := login_to_bank(user_id):
                 pk, owner_id, balance = data
-                while True:
-                    show_menu(bank_menu)
-                    user_input = int(input("> "))
-                    if user_input == 1:
-                        with WithdrawContextManager() as wd:
-                            amount = int(input('amount for withdraw'))
-                            wd.withdraw(owner_id, amount)
-                        if wd.err:
-                            print(wd.err)
-                        if wd.result:
-                            print(wd.result)
-                    elif user_input == 2:
-                        amount = int(input('amount for deposit'))
-                        with DepositContextManager(pk, owner_id, balance) as de:
-                            de.deposit(amount)
-                        if de.err:
-                            print(de.err)
-                        if de.result:
-                            print(de.result)
-                    elif user_input == 0:
-                        print('exit')
-                        break
-                    else:
-                        print('wrong input')
+                manage_bank_account()
+
         elif user_input == 3:
-            print('buy ticket')
-            user_id = int(input('user id: '))
-            cart_type = int(input('cart type: '))
-            with BuyTicketContextManager() as buy:
-                buy.get_ticket(user_id, cart_type)
-            if buy.err:
-                print(buy.err)
-            if buy.result:
-                print(buy.result)
+            buy_ticket()
+
         elif user_input == 4:
-            print('admin')
             admin_id = int(input('admin id: '))
             admin_password = input('password: ')
             if login_super_user(user_id=admin_id, password=admin_password):
-                while True:
-                    show_menu(administrator_menu)
-                    user_input = int(input('> '))
-                    if user_input == 1:
-                        submit_travel()
-                    elif user_input == 2:
-                        edit_travel()
-                    elif user_input == 0:
-                        print('exit')
-                        logout_super_user(admin_id)
-                        break
-                    else:
-                        print('wrong input')
+                admin_panel()
         elif user_input == 0:
             print('exit')
             break

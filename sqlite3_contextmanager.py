@@ -1,5 +1,5 @@
 import sqlite3
-from metro import User, BankAccount, Travel
+from metro import User, BankAccount, Travel, Cart
 from custom_exception import WrongPasswordException, AccessDeniedException
 
 
@@ -98,12 +98,12 @@ def insert_sql():
 
 # create_tables()
 
+
 def login_to_bank(user_id):
     with sqlite3.connect('metro.db') as conn:
         cur = conn.cursor()
         query = "SELECT * FROm bank_account WHERE owner_id=?"
         data = (user_id,)
-        print(cur.execute(query, data).fetchone())
         return cur.execute(query, data).fetchone()
 
 
@@ -122,7 +122,6 @@ class CreateUserContextManager:
 
     def create_user(self, first_name, last_name, password, phone, email, role):
         self.user = User.register_new_user(first_name, last_name, password, phone, email, role)
-        print('after create user')
 
     def insert_to_database(self):
         if self.user:
@@ -575,4 +574,55 @@ class TravelContextManager:
                 self.result = f'process success'
         else:
             self.result = f'travel submit success\n travel id: {self.cur.lastrowid}'
+        return True
+
+
+class CartContextManager:
+    def __init__(self):
+        self.cart = None
+        self.conn = None
+        self.cur = None
+        self.local_connection = None
+
+    def __enter__(self):
+        return self
+
+    def create_cart(self, conn=None, cur=None):
+        cart_type = int(input("cart_type(1,2,3): "))
+        cart_price = input("cart price: ")
+        cart_expire_date = input('expire date')
+        self.cart = Cart.create_cart(cart_type, cart_price, cart_expire_date)
+
+        if conn and cur:
+            self.conn = conn
+            self.cur = cur
+            self.local_connection = False
+        else:
+            self.conn = sqlite3.connect('metro.db')
+            self.cur = self.conn.cursor()
+            self.local_connection = True
+
+        query = """
+                INSERT INTO cart (credit, expire_date, cart_type_id)
+                VALUES(?,?,?);
+                """
+        data = (self.cart.credit, self.cart.expire_date, self.cart.cart_type)
+        self.cur.execute(query, data)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_val:
+            self.err = f'cart submit fail\nHint: {exc_val}'
+            if self.local_connection:
+                self.cur.close()
+                self.conn.close()
+        elif self.local_connection:
+            self.conn.commit()
+            self.cur.close()
+            self.conn.close()
+            if self.cur.lastrowid:
+                self.result = f'cart submit success\n cart id: {self.cur.lastrowid}'
+            else:
+                self.result = f'process success'
+        else:
+            self.result = f'cart submit success\n cart id: {self.cur.lastrowid}'
         return True

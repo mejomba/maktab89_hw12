@@ -16,7 +16,7 @@ from sqlite3_contextmanager import (
     BuyTicketContextManager,
     login_to_bank
 )
-from admin import login_super_user, submit_travel
+from admin import login_super_user, submit_travel, edit_travel
 
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
@@ -204,7 +204,7 @@ if __name__ == "__main__":
                     if user_input == 1:
                         submit_travel()
                     elif user_input == 2:
-                        print('edit travel')
+                        edit_travel()
                     elif user_input == 0:
                         print('exit')
                         break

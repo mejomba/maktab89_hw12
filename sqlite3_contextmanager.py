@@ -469,6 +469,75 @@ class TravelContextManager:
         # data = (price, start_time, end_time, Travel.is_active(end_time))
         self.cur.execute(query, data)
 
+    def edit_travel(self):
+        self.__show_travel()
+        travel_number = int(input('travel number for edit or delete: '))
+        while True:
+            user_input = int(input(f'option(1: update travel {travel_number},   2: delete travel {travel_number} 0:exit)'))
+            if user_input == 1:
+                query = """
+                        SELECT * from travel
+                        WHERE travel_id=?
+                        """
+                data = (travel_number,)
+                record = self.cur.execute(query, data).fetchone()
+                if record:
+                    travel_id, price, start_time, end_time, active = record
+
+                    new_price = int(input('new price (press enter for leaving): '))
+                    new_start_time = input('new start_time (press enter for leaving): ')
+                    new_end_time = input('new end_time (press enter for leaving): ')
+
+                    if new_price is None:
+                        new_price = price
+                    if new_start_time is None:
+                        new_start_time = start_time
+                    if new_end_time is None:
+                        new_end_time = end_time
+
+                    query = """
+                            UPDATE travel
+                            set price=?, start_time=?, end_time=?, active=?
+                            WHERE travel_id=?
+                            """
+                    price, start_time, end_time, active = Travel.valid_data((new_start_time, new_end_time), new_price)
+                    data = (price, start_time, end_time, active, travel_id)
+                    self.cur.execute(query, data)
+                    print(f'UPDATE SUCCESS')
+                else:
+                    print(f'travel {travel_number} not found')
+            elif user_input == 2:
+                query = """
+                        DELETE FROM travel
+                        WHERE travel_id=?
+                        """
+                data = (travel_number,)
+                self.cur.execute(query, data)
+                print(f'DELETE SUCCESS')
+            elif user_input == 0:
+                break
+            else:
+                print('wrong input')
+            user_input = input(f'option(0:exit, press any key to continue)')
+            if user_input == '0':
+                break
+            travel_number = int(input('travel number for edit or delete: '))
+
+    def __show_travel(self):
+        if self.conn is None and self.cur is None:
+            self.conn = sqlite3.connect('metro.db')
+            self.cur = self.conn.cursor()
+            self.local_connection = True
+
+        query = """
+                SELECT * FROM travel;
+                """
+        records = self.cur.execute(query).fetchall()
+        print(f'number    price    start_time      end_time    active')
+        for record in records:
+            travel_id, price, start_time, end_time, active = record
+            print(f'{travel_id:<9} {price:<8} {start_time:<15} {end_time:<10} {active:>2}')
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_val:
             self.err = f'travel submit fail\nHint: {exc_val}'
@@ -479,7 +548,10 @@ class TravelContextManager:
             self.conn.commit()
             self.cur.close()
             self.conn.close()
-            self.result = f'travel submit success\n travel id: {self.cur.lastrowid}'
+            if self.cur.lastrowid:
+                self.result = f'travel submit success\n travel id: {self.cur.lastrowid}'
+            else:
+                self.result = f'process success'
         else:
             self.result = f'travel submit success\n travel id: {self.cur.lastrowid}'
         return True

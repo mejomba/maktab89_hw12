@@ -368,19 +368,16 @@ class BuyTicketContextManager:
         return True
 
 
-class LoginContextManager:
+class AuthContextManager:
     def __init__(self):
         self.conn = None
         self.cur = None
         self.local_connection = None
         self.err = None
         self.result = None
-        self.user = None
-        self.first_name = None
-        self.last_name = None
-        # self.balance = None
-        # self.bank_account_id = None
-        # self.user_id = None
+        self.__first_name = None
+        self.__last_name = None
+        self.__is_authenticated = None
 
     def __enter__(self):
         return self
@@ -404,8 +401,8 @@ class LoginContextManager:
         if self.local_connection:
             self.cur.execute("BEGIN TRANSACTION")
 
-        self.first_name, self.last_name, hash_password, role_id, is_authenticated = self.cur.execute(query, data).fetchone()
-        print(self.first_name, self.last_name, hash_password, role_id, is_authenticated)
+        self.__first_name, self.__last_name, hash_password, role_id, self.__is_authenticated = self.cur.execute(query, data).fetchone()
+
         if role_id != 2:
             raise AccessDeniedException(f'user_id {user_id} not admin')
         if User.login(password, hash_password):
@@ -420,6 +417,24 @@ class LoginContextManager:
         else:
             raise WrongPasswordException('wrong password')
 
+    def logout(self, user_id, conn=None, cur=None):
+        if conn and cur:
+            self.conn = conn
+            self.cur = cur
+            self.local_connection = False
+        else:
+            self.conn = sqlite3.connect('metro.db')
+            self.cur = self.conn.cursor()
+            self.local_connection = True
+        query = """
+                UPDATE user
+                SET is_authenticated=0
+                WHERE user_id=?
+                """
+        data = (user_id,)
+        self.cur.execute(query, data)
+        self.__is_authenticated = 0
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_val:
             self.err = f'login fail\nHint: {exc_val}'
@@ -431,9 +446,15 @@ class LoginContextManager:
             self.conn.commit()
             self.cur.close()
             self.conn.close()
-            self.result = f'login success\n welcome: {self.first_name} {self.last_name}'
+            if self.__is_authenticated:
+                self.result = f'login success\n welcome: {self.__first_name} {self.__last_name}'
+            else:
+                self.result = f'logout success'
         else:
-            self.result = f'login success\n welcome: {self.user.full_name}'
+            if self.__is_authenticated:
+                self.result = f'login success\n welcome: {self.__first_name} {self.__last_name}'
+            else:
+                self.result = f'logout success'
 
         return True
 

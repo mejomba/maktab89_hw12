@@ -1,7 +1,7 @@
 from metro import User
 from sqlite3_contextmanager import (
     CreateSuperUserContextManager as CreateSuperUser,
-    LoginContextManager as Login,
+    AuthContextManager as Auth,
     TravelContextManager as Travel,
 )
 from metro import User
@@ -24,7 +24,7 @@ def create_super_user():
 
 
 def login_super_user(user_id, password):
-    with Login() as login:
+    with Auth() as login:
         login.login(user_id, password)
     if login.err:
         print(login.err)
@@ -52,3 +52,12 @@ def edit_travel():
         print(travel.err)
     if travel.result:
         print(travel.result)
+
+
+def logout_super_user(user_id):
+    with Auth() as logout:
+        logout.logout(user_id)
+    if logout.err:
+        print(logout.err)
+    if logout.result:
+        print(logout.result)

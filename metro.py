@@ -1,6 +1,8 @@
 from hashlib import sha256
 from uuid import uuid4
-from custom_exception import MinBalanceException
+from custom_exception import MinBalanceException, InvalidTimeFormatException, InvalidTimePeriod, InvalidPriceValue
+from datetime import datetime
+from typing import Tuple
 
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
@@ -208,3 +210,28 @@ class BankAccount:
 class Passenger(User):
     def __init__(self):
         pass
+
+
+class Travel:
+    def __init__(self, price, start_time, end_time):
+        self.price = price
+        self.start_time = start_time
+        self.end_time = end_time
+        self.active = Travel.is_active(end_time)
+
+    @staticmethod
+    def is_active(t):
+        t = datetime.strptime(t, '%Y/%m/%d')
+        if t >= datetime.now():
+            return 1
+        return 0
+
+    @staticmethod
+    def valid_data(t: Tuple[str, str], p: int):
+        start, end = list(map(lambda str_time: datetime.strptime(str_time, '%Y/%m/%d'), t))
+        if start > end:
+            raise InvalidTimePeriod("start time must be lower than end time")
+        if p <= 0:
+            raise InvalidPriceValue("price value must be positive")
+        is_active = Travel.is_active(t[1])
+        return p, t[0], t[1], is_active

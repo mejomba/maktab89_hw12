@@ -8,3 +8,15 @@ class WrongPasswordException(Exception):
 
 class AccessDeniedException(Exception):
     pass
+
+
+class InvalidTimeFormatException(Exception):
+    pass
+
+
+class InvalidTimePeriod(Exception):
+    pass
+
+
+class InvalidPriceValue(Exception):
+    pass

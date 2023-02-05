@@ -1,7 +1,8 @@
 from metro import User
 from sqlite3_contextmanager import (
     CreateSuperUserContextManager as CreateSuperUser,
-    LoginContextManager as Login
+    LoginContextManager as Login,
+    TravelContextManager as Travel,
 )
 from metro import User
 
@@ -30,3 +31,15 @@ def login_super_user(user_id, password):
     if login.result:
         print(login.result)
         return True
+
+
+def submit_travel():
+    price = int(input("price: "))
+    start_time = input('start_time (yyyy/mm/dd): ')
+    end_time = input('end_time (yyyy/mm/dd): ')
+    with Travel() as travel:
+        travel.add_travel(price, start_time, end_time)
+    if travel.err:
+        print(travel.err)
+    if travel.result:
+        print(travel.result)

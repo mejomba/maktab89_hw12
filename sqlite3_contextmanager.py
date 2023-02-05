@@ -1,5 +1,5 @@
 import sqlite3
-from metro import User, BankAccount
+from metro import User, BankAccount, Travel
 from custom_exception import WrongPasswordException, AccessDeniedException
 
 
@@ -435,4 +435,51 @@ class LoginContextManager:
         else:
             self.result = f'login success\n welcome: {self.user.full_name}'
 
+        return True
+
+
+class TravelContextManager:
+    def __init__(self):
+        self.conn = None
+        self.cur = None
+        self.local_connection = None
+        self.err = None
+        self.result = None
+
+    def __enter__(self):
+        return self
+
+    def add_travel(self, price: int, start_time: str, end_time: str, conn=None, cur=None):
+        if conn and cur:
+            self.conn = conn
+            self.cur = cur
+            self.local_connection = False
+        else:
+            self.conn = sqlite3.connect('metro.db')
+            self.cur = self.conn.cursor()
+            self.local_connection = True
+
+        query = """
+                INSERT INTO travel (price, start_time, end_time, active)
+                VALUES(?,?,?,?);
+                """
+
+        data = Travel.valid_data((start_time, end_time), price)
+
+        # data = (price, start_time, end_time, Travel.is_active(end_time))
+        self.cur.execute(query, data)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_val:
+            self.err = f'travel submit fail\nHint: {exc_val}'
+            if self.local_connection:
+                self.cur.close()
+                self.conn.close()
+        elif self.local_connection:
+            self.conn.commit()
+            self.cur.close()
+            self.conn.close()
+            self.result = f'travel submit success\n travel id: {self.cur.lastrowid}'
+        else:
+            self.result = f'travel submit success\n travel id: {self.cur.lastrowid}'
         return True

@@ -207,11 +207,6 @@ class BankAccount:
         pass
 
 
-class Passenger(User):
-    def __init__(self):
-        pass
-
-
 class Travel:
     def __init__(self, price, start_time, end_time):
         self.price = price

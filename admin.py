@@ -43,3 +43,12 @@ def submit_travel():
         print(travel.err)
     if travel.result:
         print(travel.result)
+
+
+def edit_travel():
+    with Travel() as travel:
+        travel.edit_travel()
+    if travel.err:
+        print(travel.err)
+    if travel.result:
+        print(travel.result)

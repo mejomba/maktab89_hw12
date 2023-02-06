@@ -68,3 +68,7 @@ def create_cart():
     # todo add unique constraint to cart_type_id
     with Cart() as cart:
         cart.create_cart()
+    if cart.err:
+        print(cart.err)
+    if cart.result:
+        print(cart.result)

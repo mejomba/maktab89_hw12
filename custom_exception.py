@@ -20,3 +20,7 @@ class InvalidTimePeriod(Exception):
 
 class InvalidPriceValue(Exception):
     pass
+
+
+class UserNotFound(Exception):
+    pass

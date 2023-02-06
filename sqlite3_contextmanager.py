@@ -1,6 +1,6 @@
 import sqlite3
 from metro import User, BankAccount, Travel, Cart
-from custom_exception import WrongPasswordException, AccessDeniedException
+from custom_exception import WrongPasswordException, AccessDeniedException, UserNotFound
 
 
 def create_tables():
@@ -47,7 +47,7 @@ def create_tables():
                 (cart_id INTEGER PRIMARY KEY AUTOINCREMENT, 
                  credit INTEGER, 
                  expire_date text, 
-                 cart_type_id INTEGER, 
+                 cart_type_id INTEGER UNIQUE, 
                  FOREIGN KEY(cart_type_id) REFERENCES cart_type(cart_type_id),
                 );                
                 """
@@ -400,7 +400,11 @@ class AuthContextManager:
         if self.local_connection:
             self.cur.execute("BEGIN TRANSACTION")
 
-        self.__first_name, self.__last_name, hash_password, role_id, self.__is_authenticated = self.cur.execute(query, data).fetchone()
+        record = self.cur.execute(query, data).fetchone()
+        if record:
+            self.__first_name, self.__last_name, hash_password, role_id, self.__is_authenticated = record
+        else:
+            raise UserNotFound('user not found')
 
         if role_id != 2:
             raise AccessDeniedException(f'user_id {user_id} not admin')
@@ -583,6 +587,8 @@ class CartContextManager:
         self.conn = None
         self.cur = None
         self.local_connection = None
+        self.result = None
+        self.err = None
 
     def __enter__(self):
         return self
@@ -590,8 +596,11 @@ class CartContextManager:
     def create_cart(self, conn=None, cur=None):
         cart_type = int(input("cart_type(1,2,3): "))
         cart_price = input("cart price: ")
-        cart_expire_date = input('expire date')
-        self.cart = Cart.create_cart(cart_type, cart_price, cart_expire_date)
+        if cart_type == 3:
+            cart_expire_period = input('expire period: ')
+        else:
+            cart_expire_period = None
+        self.cart = Cart.create_cart(cart_type, cart_price, cart_expire_period)
 
         if conn and cur:
             self.conn = conn

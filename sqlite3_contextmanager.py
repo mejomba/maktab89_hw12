@@ -1,6 +1,13 @@
 import sqlite3
 from metro import User, BankAccount, Travel, Cart
-from custom_exception import WrongPasswordException, AccessDeniedException, UserNotFound
+from custom_exception import (
+    WrongPasswordException,
+    AccessDeniedException,
+    UserNotFound,
+    UserCreationFail,
+    CreateBankAccountFail,
+    CreateSuperUserFail,
+)
 
 
 def create_tables():
@@ -116,34 +123,45 @@ class CreateUserContextManager:
         self.exc_val = None
         self.conn = None
         self.cur = None
+        self.local_connection = None
 
     def __enter__(self):
         return self
 
-    def create_user(self, first_name, last_name, password, phone, email, role):
-        self.user = User.register_new_user(first_name, last_name, password, phone, email, role)
+    def create_user(self):
+        first_name = input("first name: ")
+        last_name = input("last name: ")
+        password = input("password: ")
+        phone = input("phone: ")
+        email = input("email: ")
+        self.user = User.register_new_user(first_name, last_name, password, phone, email, 1)
 
-    def insert_to_database(self):
         if self.user:
             self.user.user_id = None
             self.conn = sqlite3.connect('metro.db')
             self.cur = self.conn.cursor()
+            self.local_connection = True
             self.user.user_id = User.insert_to_database(self.user, self.cur)
-            print(self.user.user_id)
         else:
-            raise ValueError('user creation fail')
+            raise UserCreationFail('user creation fail')
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.exc_type = exc_type
-        self.exc_val = exc_val
-        if exc_val:
+        if exc_val and self.local_connection:
             self.user = None
             self.err = f'create user fail\nHint: {exc_val}'
-            return True
-        elif not exc_val and self.user is not None and self.user.have_bank_account:
-            self.result = f'create user {self.user.full_name} successfully'
+            self.cur.execute('ROLLBACK')
+            self.cur.close()
+            self.conn.close()
+        elif exc_val and not self.local_connection:
+            self.err = f'create user fail\nHint: {exc_val}'
+        elif not exc_val and self.user is not None and self.user.have_bank_account and self.local_connection:
+            self.conn.commit()
+            self.cur.close()
+            self.conn.commit()
+            self.result = f'create user {self.user.full_name} successfully ID: {self.user.user_id}'
         elif not self.user.have_bank_account:
             self.err = f"create user fail\nHint: user don't have bank account"
+        return True
 
 
 class CreateBankAccountContextManager:
@@ -156,31 +174,24 @@ class CreateBankAccountContextManager:
         self.err = None
         self.exc_type = None
         self.exc_val = None
+        self.local_connection = None
 
     def __enter__(self):
         return self
 
     def create_bank_account(self, balance):
         self.bank = BankAccount(owner=self.user, balance=balance)
-        print('after create bank')
-
-    def insert_to_database(self):
-        BankAccount.insert_to_database(self.bank, self.user, self.cur)
+        if self.bank:
+            BankAccount.insert_to_database(self.bank, self.user, self.cur)
+        else:
+            raise CreateBankAccountFail('create bank account fail')
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.exc_type = exc_type
-        self.exc_val = exc_val
         if exc_val:
             self.err = f'create bank account fail\nHint: {self.exc_val}'
-            self.cur.execute('ROLLBACK;')
-            self.cur.close()
-            self.conn.close()
             return True
         elif not exc_val and self.bank is not None:
-            self.conn.commit()
             self.user.have_bank_account = True
-            self.cur.close()
-            self.conn.close()
             self.result = f'create bank account for {self.user.full_name} successfully'
 
 
@@ -199,17 +210,13 @@ class CreateSuperUserContextManager:
 
     def create_superuser(self, first_name, last_name, password, phone, email, role):
         self.superuser = User.register_new_user(first_name, last_name, password, phone, email, role)
-        print('after create superuser')
-
-    def insert_to_database(self):
         if self.superuser:
             self.superuser.user_id = None
             self.conn = sqlite3.connect('metro.db')
             self.cur = self.conn.cursor()
             self.superuser.user_id = User.insert_to_database(self.superuser, self.cur)
-            print(self.superuser.user_id)
         else:
-            raise ValueError('user creation fail')
+            raise CreateSuperUserFail('superuser creation fail')
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.exc_type = exc_type
@@ -217,12 +224,12 @@ class CreateSuperUserContextManager:
         if exc_val:
             self.superuser = None
             self.err = f'create superuser fail\nHint: {exc_val}'
-            return True
         elif not exc_val and self.superuser is not None:
             self.conn.commit()
             self.cur.close()
             self.conn.close()
-            self.result = f'create user {self.superuser.full_name} successfully'
+            self.result = f'create user {self.superuser.full_name} successfully. id: {self.superuser.user_id}'
+        return True
 
 
 class WithdrawContextManager:

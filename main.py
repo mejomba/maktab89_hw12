@@ -77,17 +77,10 @@ def deposit(user, value):
 
 def create_regular_user():
     with CreateUser() as cu:
-        first_name = input("first name: ")
-        last_name = input("last name: ")
-        password = input("password: ")
-        phone = input("phone: ")
-        email = input("email: ")
-        cu.create_user(first_name, last_name, password, phone, email, role)
-        cu.insert_to_database()
+        cu.create_user()
         with CreateBankAccount(user=cu.user, cur=cu.cur, conn=cu.conn) as cb:
             balance = int(input(f'balance for create {cu.user.full_name} bank account'))
             cb.create_bank_account(balance)
-            cb.insert_to_database()
         if cb.err:
             print(cb.err)
         elif cb.result:

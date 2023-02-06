@@ -16,7 +16,6 @@ def create_super_user():
     email = input("email: ")
     with CreateSuperUser() as cu:
         cu.create_superuser(first_name, last_name, password, phone, email, role=2)
-        cu.insert_to_database()
 
     if cu.err:
         print(cu.err)

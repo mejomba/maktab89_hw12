@@ -1,8 +1,16 @@
 from hashlib import sha256
 from uuid import uuid4
-from custom_exception import MinBalanceException, InvalidTimeFormatException, InvalidTimePeriod, InvalidPriceValue
+from custom_exception import (
+    MinBalanceException,
+    InvalidTimeFormatException,
+    InvalidTimePeriod,
+    InvalidPriceValue,
+    InvalidPhoneFormat,
+    InvalidPassword,
+)
 from datetime import datetime
 from typing import Tuple
+import re
 
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
@@ -40,9 +48,12 @@ class User:
         :param password: user input password
         :return: str
         """
+        password_regex = r"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$"
+        if not re.match(password_regex, password):
+            raise InvalidPassword("password minimum 8 characters, at least one letter and one number")
         # try:
-        if len(str(password)) <= 4:
-            raise ValueError(f"{name_var} length should be longer than 4")
+        # if len(str(password)) <= 4:
+        #     raise ValueError(f"{name_var} length should be longer than 4")
         else:
             return sha256(str(password).encode('utf-8')).hexdigest()
         # except ValueError as e:
@@ -60,13 +71,15 @@ class User:
         :param password: str from user input
         :param phone: str optional from user input
         :param email: str optional from user input
-        :return: None
+        :return: User
         """
+        phone_regex = r'^09[0-9]{9}$'
+        if not re.match(phone_regex, phone):
+            raise InvalidPhoneFormat('phone incorrect. valid format: 09123456789')
+
         if first_name and last_name and password and phone and email and role:
             user = cls(first_name, last_name, password, phone, email, role)
             return user
-        else:
-            return f'first_name, last_name, password, phone, email, role is {RED}required{END}'
 
     @classmethod
     def login(cls, password, hash_password) -> bool:

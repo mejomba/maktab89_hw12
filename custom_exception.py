@@ -32,3 +32,15 @@ class InvalidPhoneFormat(Exception):
 
 class InvalidPassword(Exception):
     pass
+
+
+class UserCreationFail(Exception):
+    pass
+
+
+class CreateBankAccountFail(Exception):
+    pass
+
+
+class CreateSuperUserFail(Exception):
+    pass

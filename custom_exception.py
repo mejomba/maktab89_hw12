@@ -24,3 +24,11 @@ class InvalidPriceValue(Exception):
 
 class UserNotFound(Exception):
     pass
+
+
+class InvalidPhoneFormat(Exception):
+    pass
+
+
+class InvalidPassword(Exception):
+    pass

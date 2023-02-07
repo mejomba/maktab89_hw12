@@ -9,6 +9,7 @@ from custom_exception import (
     CreateSuperUserFail,
 )
 
+from utils import get_digit
 
 RED = "\033[0;31m"
 MAGENTAB = "\u001b[45;1m"
@@ -513,15 +514,11 @@ class TravelContextManager:
 
     def edit_travel(self):
         self.__show_travel()
-        travel_number = input('\ntravel number for edit or delete (0:exit): ')
-        if travel_number.isdigit():
-            travel_number = int(travel_number)
+        travel_number = get_digit('\ntravel number for edit or delete (0:exit): ')
         while True:
             if travel_number == 0:
                 break
-            user_input = input(f'option(1: update travel {travel_number},   2: delete travel {travel_number} 0:exit)')
-            if user_input.isdigit():
-                user_input = int(user_input)
+            user_input = get_digit(f'option(1: update travel {travel_number},   2: delete travel {travel_number} 0:exit)')
             if user_input == 1:
                 query = """
                         SELECT * from travel
@@ -532,9 +529,7 @@ class TravelContextManager:
                 if record:
                     travel_id, price, start_time, end_time, active = record
 
-                    new_price = input('new price (press enter for leaving): ')
-                    if new_price.isdigit():
-                        new_price = int(new_price)
+                    new_price = get_digit('new price (press enter for leaving): ')
                     new_start_time = input('new start_time (press enter for leaving): ')
                     new_end_time = input('new end_time (press enter for leaving): ')
 
@@ -571,12 +566,10 @@ class TravelContextManager:
                 break
             else:
                 print('wrong input')
-            user_input = input(f'option(0:exit, press any key to continue)')
-            if user_input == '0':
+            user_input = get_digit(f'option(0:exit, press any key to continue)')
+            if user_input == 0:
                 break
-            travel_number = input('\ntravel number for edit or delete (0:exit): ')
-            if travel_number.isdigit():
-                travel_number = int(travel_number)
+            travel_number = get_digit('\ntravel number for edit or delete (0:exit): ')
 
     def __show_travel(self):
         if self.conn is None and self.cur is None:

@@ -78,9 +78,9 @@ def deposit(user, value):
 def create_regular_user():
     with CreateUser() as cu:
         cu.create_user()
-        with CreateBankAccount(user=cu.user, cur=cu.cur, conn=cu.conn) as cb:
+        with CreateBankAccount(user=cu.user) as cb:
             balance = int(input(f'balance for create {cu.user.full_name} bank account'))
-            cb.create_bank_account(balance)
+            cb.create_bank_account(balance, conn=cu.conn, cur=cu.cur)
         if cb.err:
             print(cb.err)
         elif cb.result:
@@ -163,9 +163,12 @@ if __name__ == "__main__":
 
         elif user_input == 2:
             user_id = int(input('user id: '))
-            if data := login_to_bank(user_id):
+            data = login_to_bank(user_id)
+            if data:
                 pk, owner_id, balance = data
                 manage_bank_account()
+            else:
+                print(f"user {user_id} don't hove bank account")
 
         elif user_input == 3:
             buy_ticket()

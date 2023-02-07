@@ -1,5 +1,5 @@
 import os
-from metro import User
+from utils import get_digit
 from admin import create_super_user
 # from custom_contextmanager import (
 #     CreateUserContextManager,
@@ -84,7 +84,7 @@ def create_regular_user():
         email = input("email: ")
         cu.create_user(first_name, last_name, password, phone, email)
         with CreateBankAccount(user=cu.user) as cb:
-            balance = int(input(f'balance for create {cu.user.full_name} bank account'))
+            balance = get_digit(f'balance for create {cu.user.full_name} bank account: ')
             cb.create_bank_account(balance, conn=cu.conn, cur=cu.cur)
         if cb.err:
             print(cb.err)

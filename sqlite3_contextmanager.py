@@ -145,19 +145,12 @@ class CreateUserContextManager(BaseContextManager):
     def __enter__(self):
         return self
 
-    def create_user(self):
-        first_name = input("first name: ")
-        last_name = input("last name: ")
-        password = input("password: ")
-        phone = input("phone: ")
-        email = input("email: ")
+    def create_user(self, first_name, last_name, password, phone, email, conn=None, cur=None):
         self.user = User.register_new_user(first_name, last_name, password, phone, email, 1)
 
         if self.user:
             self.user.user_id = None
-            self.conn = sqlite3.connect('metro.db')
-            self.cur = self.conn.cursor()
-            self.local_connection = True
+            self.conn, self.cur, self.local_connection = database_connector('metro.db', conn, cur)
             self.user.user_id = User.insert_to_database(self.user, self.cur)
         else:
             raise UserCreationFail('user creation fail')

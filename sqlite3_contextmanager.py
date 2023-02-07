@@ -145,19 +145,15 @@ class CreateUserContextManager(BaseContextManager):
     def __enter__(self):
         return self
 
-    def create_user(self):
-        first_name = input("first name: ")
-        last_name = input("last name: ")
-        password = input("password: ")
-        phone = input("phone: ")
-        email = input("email: ")
-        self.user = User.register_new_user(first_name, last_name, password, phone, email, 1)
+    def create_user(self, first_name, last_name, password, phone, email, conn=None, cur=None):
+        if first_name and last_name and password and phone and email:
+            self.user = User.register_new_user(first_name, last_name, password, phone, email, 1)
+        else:
+            raise UserCreationFail('all input required')
 
         if self.user:
             self.user.user_id = None
-            self.conn = sqlite3.connect('metro.db')
-            self.cur = self.conn.cursor()
-            self.local_connection = True
+            self.conn, self.cur, self.local_connection = database_connector('metro.db', conn, cur)
             self.user.user_id = User.insert_to_database(self.user, self.cur)
         else:
             raise UserCreationFail('user creation fail')
@@ -177,8 +173,13 @@ class CreateUserContextManager(BaseContextManager):
             self.conn.commit()
             self.result = f'create user {self.user.full_name} successfully ID: {self.user.user_id}'
         elif not self.user.have_bank_account:
+            self.cur.execute('ROLLBACK')
+            self.cur.close()
+            self.conn.close()
             self.err = f"create user fail\nHint: user don't have bank account"
-        return True
+        elif not exc_val and self.user.have_bank_account and not self.local_connection:
+            self.result = f'create user {self.user.full_name} successfully ID: {self.user.user_id}'
+        # return True
 
 
 class CreateBankAccountContextManager(BaseContextManager):
@@ -186,15 +187,14 @@ class CreateBankAccountContextManager(BaseContextManager):
         super().__init__()
         self.user = user
         self.bank = None
-        self.exc_type = None
-        self.exc_val = None
 
     def __enter__(self):
         return self
 
     def create_bank_account(self, balance, conn=None, cur=None):
+        if not isinstance(balance, int) or balance <= 0:
+            raise CreateBankAccountFail('balance must be number > 0')
         self.conn, self.cur, self.local_connection = database_connector('metro_db', conn, cur)
-
         self.bank = BankAccount(owner=self.user, balance=balance)
         if self.bank:
             BankAccount.insert_to_database(self.bank, self.user, self.cur)
@@ -203,11 +203,11 @@ class CreateBankAccountContextManager(BaseContextManager):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_val:
-            self.err = f'create bank account fail\nHint: {self.exc_val}'
-            return True
+            self.err = f'create bank account fail\nHint: {exc_val}'
         elif not exc_val and self.bank is not None:
             self.user.have_bank_account = True
             self.result = f'create bank account for {self.user.full_name} successfully'
+        return True
 
 
 class CreateSuperUserContextManager(BaseContextManager):

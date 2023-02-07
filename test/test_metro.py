@@ -1,48 +1,43 @@
 import unittest
-from sqlite3_contextmanager import CreateUserContextManager, CreateBankAccountContextManager
-from metro import User, BankAccount, Travel, Cart
-from custom_exception import InvalidPassword, InvalidPhoneFormat, MinBalanceException
-from hashlib import sha256
 import sqlite3
-from sqlite3_contextmanager import create_tables
+from hashlib import sha256
 
-
-class TestCreateUser(unittest.TestCase):
-    def setUp(self) -> None:
-        self.test_set1 = ['mojtaba', 'aminzadeh', '12345', '0936', 'abc@gmail.com']
-        self.test_set2 = ['zahra', 'jafari', '1234', '0936', 'xyz@gmail.com']
-        # self.test_set3 = ['mojtaba', 'aminzadeh', '12345', '0936', 'abc@gmail.com']
-        # self.test_set4 = ['mojtaba', 'aminzadeh', '12345', '0936', 'abc@gmail.com']
-
-    def test_create_bank_account_context_manager(self):
-        with CreateUserContextManager() as CU:
-            CU.create_user(*self.test_set1)
-        self.assertEqual(CU.user.full_name, 'mojtaba aminzadeh')
-        self.assertEqual(CU.result, f'create user {CU.user.full_name} successfully')
-
-        with CreateUserContextManager() as CU:
-            CU.create_user(*self.test_set2)
-        self.assertIs(CU.user, None)
-        self.assertEqual(CU.err, f'create user fail\nHint: {CU.exc_val}')
+from sqlite3_contextmanager import (
+    CreateUserContextManager,
+    CreateBankAccountContextManager,
+    create_tables,
+)
+from metro import (
+    User,
+    BankAccount,
+    Travel,
+    Cart,
+)
+from custom_exception import (
+    InvalidPassword,
+    InvalidPhoneFormat,
+    MinBalanceException,
+    UserCreationFail,
+    CreateBankAccountFail,
+)
 
 
 class TestCreateBankAccount(unittest.TestCase):
     def setUp(self) -> None:
-        self.test_set1 = ['jafar', 15000]
-        self.test_set2 = [User('mojtaba', 'aminzadeh', '12345', '0936', 'abc@gmail.com'), 15000]
+        self.test_set_1 = ['jafar', 15000]
+        self.test_set_2 = [User('mojtaba', 'aminzadeh', 'a1234567', '0936', 'abc@gmail.com', 1), 15000]
 
     def test_create_bank_account_context_manager_test_set1(self):
-        with CreateBankAccountContextManager(self.test_set1[0]) as CB:
-            CB.create_bank_account(self.test_set1[1])
-        self.assertEqual(CB.err, f'create bank account fail\nHint: {CB.exc_val}')
-        self.assertEqual(CB.exc_type, TypeError)
+        with CreateBankAccountContextManager(self.test_set_1[0]) as CB:
+            CB.create_bank_account(self.test_set_1[1])
+        self.assertEqual(CB.err, f'create bank account fail\nHint: owner must be a User')
         self.assertIs(CB.result, None)
 
-    def test_create_bank_account_context_manager_test_set2(self):
-        with CreateBankAccountContextManager(self.test_set2[0]) as CB:
-            CB.create_bank_account(self.test_set2[1])
+        conn = sqlite3.connect('db_for_test')
+        cur = conn.cursor()
+        with CreateBankAccountContextManager(self.test_set_2[0]) as CB:
+            CB.create_bank_account(self.test_set_2[1], conn, cur)
         self.assertIs(CB.err, None)
-        self.assertIs(CB.exc_type, None)
         self.assertEqual(CB.result, f'create bank account for {CB.user.full_name} successfully')
 
 
@@ -89,7 +84,7 @@ class TestUserClass(unittest.TestCase):
         self.assertEqual(res, self.cur.lastrowid)
 
 
-class TestBankAccount(unittest.TestCase):
+class TestBankAccountClass(unittest.TestCase):
     def setUp(self) -> None:
         self.mojtaba = User('mojtaba', 'aminzadeh', 'a1234567', '09112345678', 'mojtaba@mail.com', 1)
         self.ahmad = User('ahmad', 'safari', 'a1234567', '09112345678', 'ahmad@mail.com', 1)
@@ -130,7 +125,7 @@ class TestBankAccount(unittest.TestCase):
         self.assertEqual(self.mojtaba_acc.get_balance(), 50000 - BankAccount.WAGE_AMOUNT)
 
 
-class TestTravel(unittest.TestCase):
+class TestTravelClass(unittest.TestCase):
     def setUp(self) -> None:
         self.test_set_1 = [1200, '2020/12/10 10:10', '2020/12/10 10:30']
         self.test_set_2 = [1200, '2023/10/10 10:10', '2023/12/10 10:30']
@@ -152,7 +147,7 @@ class TestTravel(unittest.TestCase):
         self.assertEqual(res, (self.travel_2.price, self.travel_2.start_time, self.travel_2.end_time, 1))
 
 
-class TestCart(unittest.TestCase):
+class TestCartClass(unittest.TestCase):
     def setUp(self) -> None:
         self.test_set_1 = [1, 1000, '2023/12/12']
         self.test_set_2 = [2, 1000, '2023/12/12']
@@ -170,6 +165,53 @@ class TestCart(unittest.TestCase):
         res = Cart.create_cart(*self.test_set_3)
         self.assertEqual((res.cart_type, res.credit, res.expire_date), (3, 1000, '2023/12/12'))
         self.assertIsInstance(res, Cart)
+
+
+class TestCreateUserContextManager(unittest.TestCase):
+    def setUp(self) -> None:
+        self.test_set_1 = ['mojtaba', 'aminzadeh', 'a1234567', '09361234566', 'mail@mail.com']
+        self.test_set_2 = ['', 'aminzadeh', 'a1234567', '09361234566', 'mail@mail.com']
+        self.test_set_3 = ['mojtaba', 'aminzadeh', 'pass', '09361234566', 'mail@mail.com']
+        self.test_set_4 = ['mojtaba', 'aminzadeh', 'a1234567', '361234566', 'mail@mail.com']
+        self.test_set_5 = ['mojtaba', 'aminzadeh', 'pass', '361234566', 'mail@mail.com']
+
+    def test_create_user(self):
+        create_tables(db_name='db_for_test')
+
+        self.conn = sqlite3.connect('db_for_test')
+        self.cur = self.conn.cursor()
+        with CreateUserContextManager() as CU:
+            CU.create_user(*self.test_set_1, conn=self.conn, cur=self.cur)
+        self.assertEqual(CU.err, f"create user fail\nHint: user don't have bank account")
+        self.assertIs(CU.result, None)
+
+        self.conn = sqlite3.connect('db_for_test')
+        self.cur = self.conn.cursor()
+        with CreateUserContextManager() as CU:
+            CU.create_user(*self.test_set_1, conn=self.conn, cur=self.cur)
+            CU.user.have_bank_account = True
+        self.assertEqual(CU.result, f"create user mojtaba aminzadeh successfully ID: {CU.cur.lastrowid}")
+        self.assertIs(CU.err, None)
+
+        with self.assertRaises(UserCreationFail) as err:
+            with CreateUserContextManager() as CU:
+                CU.create_user(*self.test_set_2, conn=self.conn, cur=self.cur)
+        self.assertEqual(f'create user fail\nHint: {err.exception}', CU.err)
+
+        with self.assertRaises(InvalidPassword) as err:
+            with CreateUserContextManager() as CU:
+                CU.create_user(*self.test_set_3, conn=self.conn, cur=self.cur)
+        self.assertEqual(f'create user fail\nHint: {err.exception}', CU.err)
+
+        with self.assertRaises(InvalidPhoneFormat) as err:
+            with CreateUserContextManager() as CU:
+                CU.create_user(*self.test_set_4, conn=self.conn, cur=self.cur)
+        self.assertEqual(f'create user fail\nHint: {err.exception}', CU.err)
+
+        with self.assertRaises(InvalidPhoneFormat) as err:
+            with CreateUserContextManager() as CU:
+                CU.create_user(*self.test_set_5, conn=self.conn, cur=self.cur)
+        self.assertEqual(f'create user fail\nHint: {err.exception}', CU.err)
 
 
 if __name__ == "__main__":

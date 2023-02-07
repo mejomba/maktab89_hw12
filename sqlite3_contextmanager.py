@@ -9,7 +9,7 @@ from custom_exception import (
     CreateSuperUserFail,
 )
 
-from utils import get_digit
+from utils import get_digit, database_connector
 
 RED = "\033[0;31m"
 MAGENTAB = "\u001b[45;1m"
@@ -126,16 +126,21 @@ def login_to_bank(user_id):
         return cur.execute(query, data).fetchone()
 
 
-class CreateUserContextManager:
+class BaseContextManager:
     def __init__(self):
-        self.user = None
-        self.result = None
-        self.err = None
-        self.exc_type = None
-        self.exc_val = None
         self.conn = None
         self.cur = None
         self.local_connection = None
+        self.result = None
+        self.err = None
+
+
+class CreateUserContextManager(BaseContextManager):
+    def __init__(self):
+        super().__init__()
+        self.user = None
+        self.exc_type = None
+        self.exc_val = None
 
     def __enter__(self):
         return self
@@ -176,22 +181,20 @@ class CreateUserContextManager:
         return True
 
 
-class CreateBankAccountContextManager:
-    def __init__(self, user, cur, conn):
+class CreateBankAccountContextManager(BaseContextManager):
+    def __init__(self, user):
+        super().__init__()
         self.user = user
-        self.cur = cur
-        self.conn = conn
         self.bank = None
-        self.result = None
-        self.err = None
         self.exc_type = None
         self.exc_val = None
-        self.local_connection = None
 
     def __enter__(self):
         return self
 
-    def create_bank_account(self, balance):
+    def create_bank_account(self, balance, conn=None, cur=None):
+        self.conn, self.cur, self.local_connection = database_connector('metro_db', conn, cur)
+
         self.bank = BankAccount(owner=self.user, balance=balance)
         if self.bank:
             BankAccount.insert_to_database(self.bank, self.user, self.cur)
@@ -207,15 +210,12 @@ class CreateBankAccountContextManager:
             self.result = f'create bank account for {self.user.full_name} successfully'
 
 
-class CreateSuperUserContextManager:
+class CreateSuperUserContextManager(BaseContextManager):
     def __init__(self):
+        super().__init__()
         self.superuser = None
-        self.result = None
-        self.err = None
         self.exc_type = None
         self.exc_val = None
-        self.conn = None
-        self.cur = None
 
     def __enter__(self):
         return self
@@ -244,13 +244,9 @@ class CreateSuperUserContextManager:
         return True
 
 
-class WithdrawContextManager:
+class WithdrawContextManager(BaseContextManager):
     def __init__(self):
-        self.conn = None
-        self.cur = None
-        self.local_connection = None
-        self.err = None
-        self.result = None
+        super().__init__()
         self.user = None
         self.balance = None
         self.bank_account_id = None
@@ -300,22 +296,26 @@ class WithdrawContextManager:
         return True
 
 
-class DepositContextManager:
+class DepositContextManager(BaseContextManager):
     def __init__(self, pk, user_id, balance):
+        super().__init__()
         self.pk = pk
         self.user_id = user_id
         self.balance = balance
-        self.conn = sqlite3.connect('metro.db')
-        self.cur = self.conn.cursor()
-        self.err = None
-        self.result = None
         self.user = None
         self.new_balance = None
 
     def __enter__(self):
         return self
 
-    def deposit(self, amount):
+    def deposit(self, amount, conn=None, cur=None):
+        if conn and cur:
+            self.conn, self.cur, self.local_connection = conn, cur, False
+        else:
+            self.conn = sqlite3.connect('metro.db')
+            self.cur = self.conn.cursor()
+            self.local_connection = True
+
         self.cur.execute("BEGIN TRANSACTION")
         self.new_balance = BankAccount.deposit(self.balance, amount)
         query = """
@@ -340,19 +340,22 @@ class DepositContextManager:
         return True
 
 
-class BuyTicketContextManager:
+class BuyTicketContextManager(BaseContextManager):
     def __init__(self):
-        self.conn = sqlite3.connect('metro.db')
-        self.cur = self.conn.cursor()
-        self.err = None
-        self.result = None
+        super().__init__()
         self.user = None
         self.user_balance = None
 
     def __enter__(self):
         return self
 
-    def get_ticket(self, user_id, cart_type):
+    def get_ticket(self, user_id, cart_type, conn=None, cur=None):
+        if conn and cur:
+            self.conn, self.cur, self.local_connection = conn, cur, False
+        else:
+            self.conn = sqlite3.connect('metro.db')
+            self.cur = self.conn.cursor()
+            self.local_connection = True
         cart_price = None
         self.cur.execute("BEGIN TRANSACTION")
         query = """SELECT credit FROM cart
@@ -386,13 +389,9 @@ class BuyTicketContextManager:
         return True
 
 
-class AuthContextManager:
+class AuthContextManager(BaseContextManager):
     def __init__(self):
-        self.conn = None
-        self.cur = None
-        self.local_connection = None
-        self.err = None
-        self.result = None
+        super().__init__()
         self.__first_name = None
         self.__last_name = None
         self.__is_authenticated = None
@@ -481,13 +480,9 @@ class AuthContextManager:
         return True
 
 
-class TravelContextManager:
+class TravelContextManager(BaseContextManager):
     def __init__(self):
-        self.conn = None
-        self.cur = None
-        self.local_connection = None
-        self.err = None
-        self.result = None
+        super().__init__()
 
     def __enter__(self):
         return self
@@ -611,14 +606,9 @@ class TravelContextManager:
         return True
 
 
-class CartContextManager:
+class CartContextManager(BaseContextManager):
     def __init__(self):
-        self.cart = None
-        self.conn = None
-        self.cur = None
-        self.local_connection = None
-        self.result = None
-        self.err = None
+        super().__init__()
 
     def __enter__(self):
         return self

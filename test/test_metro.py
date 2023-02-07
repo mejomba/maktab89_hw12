@@ -1,6 +1,6 @@
 import unittest
 from sqlite3_contextmanager import CreateUserContextManager, CreateBankAccountContextManager
-from metro import User, BankAccount
+from metro import User, BankAccount, Travel, Cart
 from custom_exception import InvalidPassword, InvalidPhoneFormat, MinBalanceException
 from hashlib import sha256
 import sqlite3
@@ -128,6 +128,48 @@ class TestBankAccount(unittest.TestCase):
 
     def test_get_balance(self):
         self.assertEqual(self.mojtaba_acc.get_balance(), 50000 - BankAccount.WAGE_AMOUNT)
+
+
+class TestTravel(unittest.TestCase):
+    def setUp(self) -> None:
+        self.test_set_1 = [1200, '2020/12/10 10:10', '2020/12/10 10:30']
+        self.test_set_2 = [1200, '2023/10/10 10:10', '2023/12/10 10:30']
+        self.travel_1 = Travel(*self.test_set_1)
+        self.travel_2 = Travel(*self.test_set_2)
+
+    def test_is_active(self):
+        res = Travel.is_active(self.travel_1.end_time)
+        self.assertEqual(res, 0)
+
+        res = Travel.is_active(self.travel_2.end_time)
+        self.assertEqual(res, 1)
+
+    def test_valid_data(self):
+        res = Travel.valid_data((self.travel_1.start_time, self.travel_1.end_time), self.travel_1.price)
+        self.assertEqual(res, (self.travel_1.price, self.travel_1.start_time, self.travel_1.end_time, 0))
+
+        res = Travel.valid_data((self.travel_2.start_time, self.travel_2.end_time), self.travel_2.price)
+        self.assertEqual(res, (self.travel_2.price, self.travel_2.start_time, self.travel_2.end_time, 1))
+
+
+class TestCart(unittest.TestCase):
+    def setUp(self) -> None:
+        self.test_set_1 = [1, 1000, '2023/12/12']
+        self.test_set_2 = [2, 1000, '2023/12/12']
+        self.test_set_3 = [3, 1000, '2023/12/12']
+
+    def test_create_cart(self):
+        res = Cart.create_cart(*self.test_set_1)
+        self.assertEqual((res.cart_type, res.credit, res.expire_date), (1, 1000, None))
+        self.assertIsInstance(res, Cart)
+
+        res = Cart.create_cart(*self.test_set_2)
+        self.assertEqual((res.cart_type, res.credit, res.expire_date), (2, 1000, None))
+        self.assertIsInstance(res, Cart)
+
+        res = Cart.create_cart(*self.test_set_3)
+        self.assertEqual((res.cart_type, res.credit, res.expire_date), (3, 1000, '2023/12/12'))
+        self.assertIsInstance(res, Cart)
 
 
 if __name__ == "__main__":

@@ -50,17 +50,9 @@ class User:
         """
         password_regex = r"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$"
         if not re.match(password_regex, password):
-            raise InvalidPassword("password minimum 8 characters, at least one letter and one number")
-        # try:
-        # if len(str(password)) <= 4:
-        #     raise ValueError(f"{name_var} length should be longer than 4")
+            raise InvalidPassword(f"{name_var} minimum 8 characters, at least one letter and one number")
         else:
             return sha256(str(password).encode('utf-8')).hexdigest()
-        # except ValueError as e:
-        #     return f'{YELLOW}("Hint:"){END} {e}'
-
-    def __valid_username(self) -> str:
-        pass
 
     @classmethod
     def register_new_user(cls, first_name, last_name, password, phone, email, role):
@@ -69,17 +61,17 @@ class User:
         :param first_name: str form user input
         :param last_name: str form user input
         :param password: str from user input
-        :param phone: str optional from user input
-        :param email: str optional from user input
+        :param phone: str from user input
+        :param email: str from user input
+        :param role: int from user input (1:regular_user, 2:admin)
         :return: User
         """
         phone_regex = r'^09[0-9]{9}$'
         if not re.match(phone_regex, phone):
             raise InvalidPhoneFormat('phone incorrect. valid format: 09123456789')
 
-        if first_name and last_name and password and phone and email and role:
-            user = cls(first_name, last_name, password, phone, email, role)
-            return user
+        user = cls(first_name, last_name, password, phone, email, role)
+        return user
 
     @classmethod
     def login(cls, password, hash_password) -> bool:
@@ -210,8 +202,9 @@ class BankAccount:
         else:
             return balance + amount
 
-    # def get_balance(self) -> int:
-    #     return self.__balance
+    def get_balance(self) -> int:
+        self.__balance -= self.WAGE_AMOUNT  # برداشت کارمزد
+        return self.__balance
 
     def change_wage(self) -> None:
         pass

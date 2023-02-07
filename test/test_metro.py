@@ -1,8 +1,10 @@
 import unittest
 from sqlite3_contextmanager import CreateUserContextManager, CreateBankAccountContextManager
-from metro import User
-from custom_exception import InvalidPassword, InvalidPhoneFormat
+from metro import User, BankAccount
+from custom_exception import InvalidPassword, InvalidPhoneFormat, MinBalanceException
 from hashlib import sha256
+import sqlite3
+from sqlite3_contextmanager import create_tables
 
 
 class TestCreateUser(unittest.TestCase):
@@ -53,6 +55,10 @@ class TestUserClass(unittest.TestCase):
         self.login_test_set2 = ['1234567a', sha256('a1234567'.encode('utf-8')).hexdigest()]
         self.login_test_set3 = ['123', sha256('a1234567'.encode('utf-8')).hexdigest()]
 
+        self.user = User.register_new_user(*self.register_new_user_test_set_1)
+        self.conn = None
+        self.cur = None
+
     def test_register_new_user(self):
         self.assertIsInstance(User.register_new_user(*self.register_new_user_test_set_1), User)
 
@@ -71,8 +77,58 @@ class TestUserClass(unittest.TestCase):
 
         with self.assertRaises(InvalidPassword) as password_err:
             User.login(*self.login_test_set3)
-        error = "password minimum 8 characters, at least one letter and one number"
+        error = "login password minimum 8 characters, at least one letter and one number"
         self.assertEqual(password_err.exception.args[0], error)
+
+    def test_insert_to_database(self):
+        create_tables(db_name='db_for_test')
+        self.conn = sqlite3.connect('db_for_test')
+        self.cur = self.conn.cursor()
+        res = User.insert_to_database(user=self.user, cur=self.cur)
+        self.assertNotEqual(res, 0)
+        self.assertEqual(res, self.cur.lastrowid)
+
+
+class TestBankAccount(unittest.TestCase):
+    def setUp(self) -> None:
+        self.mojtaba = User('mojtaba', 'aminzadeh', 'a1234567', '09112345678', 'mojtaba@mail.com', 1)
+        self.ahmad = User('ahmad', 'safari', 'a1234567', '09112345678', 'ahmad@mail.com', 1)
+        self.mojtaba_acc = BankAccount(self.mojtaba, 50000)
+        self.ahmad_acc = BankAccount(self.ahmad, 20000)
+        BankAccount.WAGE_AMOUNT = 600
+        BankAccount.MinBalance = 5000
+
+    def test_withdraw(self):
+        with self.assertRaises(MinBalanceException) as error:
+            self.mojtaba_acc.withdraw(self.mojtaba_acc.balance, 46000)
+        self.assertTrue("NOT Enough balance to withdraw!" in str(error.exception))
+
+        amount_to_withdraw = 10000
+        res = self.mojtaba_acc.withdraw(self.mojtaba_acc.balance, amount_to_withdraw)
+        self.assertEqual(res, self.mojtaba_acc.balance - amount_to_withdraw - BankAccount.WAGE_AMOUNT)
+
+        with self.assertRaises(ValueError) as error2:
+            self.mojtaba_acc.withdraw(self.mojtaba_acc.balance, -10000)
+        self.assertTrue("amount must be positive" in str(error2.exception))
+
+    def test_deposit(self):
+        res = BankAccount.deposit(self.mojtaba_acc.balance, 1000)
+        self.assertEqual(res, self.mojtaba_acc.balance + 1000)
+
+        with self.assertRaises(ValueError) as error:
+            BankAccount.deposit(self.mojtaba_acc.balance, -1000)
+        self.assertEqual(str(error.exception), 'amount must be positive')
+
+    def test_insert_to_database(self):
+        create_tables(db_name='db_for_test')
+        self.conn = sqlite3.connect('db_for_test')
+        self.cur = self.conn.cursor()
+        self.mojtaba_acc.insert_to_database(self.mojtaba, self.cur)
+        self.assertNotEqual(self.cur.lastrowid, 0)
+
+    def test_get_balance(self):
+        self.assertEqual(self.mojtaba_acc.get_balance(), 50000 - BankAccount.WAGE_AMOUNT)
+
 
 if __name__ == "__main__":
     unittest.main()

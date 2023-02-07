@@ -10,8 +10,8 @@ from custom_exception import (
 )
 
 
-def create_tables():
-    with sqlite3.connect('metro.db') as conn:
+def create_tables(db_name='metro.db'):
+    with sqlite3.connect(db_name) as conn:
         cur = conn.cursor()
         query = """CREATE TABLE IF NOT EXISTS role 
                 (role_id INTEGER PRIMARY KEY AUTOINCREMENT, role_type VARCHAR(50));
@@ -55,7 +55,7 @@ def create_tables():
                  credit INTEGER, 
                  expire_date text, 
                  cart_type_id INTEGER UNIQUE, 
-                 FOREIGN KEY(cart_type_id) REFERENCES cart_type(cart_type_id),
+                 FOREIGN KEY(cart_type_id) REFERENCES cart_type(cart_type_id)
                 );                
                 """
         cur.execute(query)

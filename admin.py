@@ -35,8 +35,8 @@ def login_super_user(user_id, password):
 
 def submit_travel():
     price = int(input("price: "))
-    start_time = input('start_time (yyyy/mm/dd): ')
-    end_time = input('end_time (yyyy/mm/dd): ')
+    start_time = input('start_time (yyyy/mm/dd HH:MM): ')
+    end_time = input('end_time (yyyy/mm/dd HH:MM): ')
     with Travel() as travel:
         travel.add_travel(price, start_time, end_time)
     if travel.err:

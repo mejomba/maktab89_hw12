@@ -9,6 +9,18 @@ from custom_exception import (
     CreateSuperUserFail,
 )
 
+from utils import get_digit
+
+RED = "\033[0;31m"
+MAGENTAB = "\u001b[45;1m"
+GREEN = "\033[0;32m"
+BLUE = "\033[0;34m"
+YELLOW = "\033[1;33m"
+CYANB = "\u001b[46m"
+BLACK = "\u001b[30;1m"
+UNDER = "\u001b[4m"
+BOLD = "\u001b[1m"
+END = "\033[0m"
 
 def create_tables(db_name='metro.db'):
     with sqlite3.connect(db_name) as conn:
@@ -416,13 +428,13 @@ class AuthContextManager:
         if role_id != 2:
             raise AccessDeniedException(f'user_id {user_id} not admin')
         if User.login(password, hash_password):
-            is_authenticated = 1
+            self.__is_authenticated = 1
             query = """
                     UPDATE user
                     SET is_authenticated=?
                     WHERE user_id=?
             """
-            data = (is_authenticated, user_id)
+            data = (self.__is_authenticated, user_id)
             self.cur.execute(query, data)
         else:
             raise WrongPasswordException('wrong password')
@@ -457,12 +469,12 @@ class AuthContextManager:
             self.cur.close()
             self.conn.close()
             if self.__is_authenticated:
-                self.result = f'login success\n welcome: {self.__first_name} {self.__last_name}'
+                self.result = f'login success\nwelcome: {self.__first_name} {self.__last_name}'
             else:
                 self.result = f'logout success'
         else:
             if self.__is_authenticated:
-                self.result = f'login success\n welcome: {self.__first_name} {self.__last_name}'
+                self.result = f'login success\nwelcome: {self.__first_name} {self.__last_name}'
             else:
                 self.result = f'logout success'
 
@@ -502,9 +514,11 @@ class TravelContextManager:
 
     def edit_travel(self):
         self.__show_travel()
-        travel_number = int(input('travel number for edit or delete: '))
+        travel_number = get_digit('\ntravel number for edit or delete (0:exit): ')
         while True:
-            user_input = int(input(f'option(1: update travel {travel_number},   2: delete travel {travel_number} 0:exit)'))
+            if travel_number == 0:
+                break
+            user_input = get_digit(f'option(1: update travel {travel_number},   2: delete travel {travel_number} 0:exit)')
             if user_input == 1:
                 query = """
                         SELECT * from travel
@@ -515,15 +529,15 @@ class TravelContextManager:
                 if record:
                     travel_id, price, start_time, end_time, active = record
 
-                    new_price = int(input('new price (press enter for leaving): '))
+                    new_price = get_digit('new price (press enter for leaving): ')
                     new_start_time = input('new start_time (press enter for leaving): ')
                     new_end_time = input('new end_time (press enter for leaving): ')
 
-                    if new_price is None:
+                    if not new_price:
                         new_price = price
-                    if new_start_time is None:
+                    if not new_start_time:
                         new_start_time = start_time
-                    if new_end_time is None:
+                    if not new_end_time:
                         new_end_time = end_time
 
                     query = """
@@ -544,15 +558,18 @@ class TravelContextManager:
                         """
                 data = (travel_number,)
                 self.cur.execute(query, data)
-                print(f'DELETE SUCCESS')
+                if self.cur.rowcount:
+                    print(f'DELETE SUCCESS')
+                else:
+                    print(f'RECORD NOT FOUND')
             elif user_input == 0:
                 break
             else:
                 print('wrong input')
-            user_input = input(f'option(0:exit, press any key to continue)')
-            if user_input == '0':
+            user_input = get_digit(f'option(0:exit, press any key to continue)')
+            if user_input == 0:
                 break
-            travel_number = int(input('travel number for edit or delete: '))
+            travel_number = get_digit('\ntravel number for edit or delete (0:exit): ')
 
     def __show_travel(self):
         if self.conn is None and self.cur is None:
@@ -564,10 +581,16 @@ class TravelContextManager:
                 SELECT * FROM travel;
                 """
         records = self.cur.execute(query).fetchall()
-        print(f'number    price    start_time      end_time    active')
+        print(f'{GREEN}{BOLD}{UNDER}number    price    start_time           end_time             active{END}')
+        color = True
         for record in records:
             travel_id, price, start_time, end_time, active = record
-            print(f'{travel_id:<9} {price:<8} {start_time:<15} {end_time:<10} {active:>2}')
+            if color:
+                print(f'{BLACK}{MAGENTAB}{travel_id:<9} {price:<8} {start_time:<20} {end_time:<20} {active:<7}{END}')
+                color = not color
+            else:
+                print(f'{BLACK}{CYANB}{travel_id:<9} {price:<8} {start_time:<20} {end_time:<20} {active:<7}{END}')
+                color = not color
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_val:

@@ -13,6 +13,7 @@ from typing import Tuple
 import re
 
 RED = "\033[0;31m"
+REDB = "\u001b[41;1m"
 GREEN = "\033[0;32m"
 BLUE = "\033[0;34m"
 YELLOW = "\033[1;33m"
@@ -222,14 +223,14 @@ class Travel:
 
     @staticmethod
     def is_active(t):
-        t = datetime.strptime(t, '%Y/%m/%d')
+        t = datetime.strptime(t, '%Y/%m/%d %H:%M')
         if t >= datetime.now():
             return 1
         return 0
 
     @staticmethod
     def valid_data(t: Tuple[str, str], p: int):
-        start, end = list(map(lambda str_time: datetime.strptime(str_time, '%Y/%m/%d'), t))
+        start, end = list(map(lambda str_time: datetime.strptime(str_time, '%Y/%m/%d %H:%M'), t))
         if start > end:
             raise InvalidTimePeriod("start time must be lower than end time")
         if p <= 0:

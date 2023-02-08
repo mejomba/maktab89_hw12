@@ -15,7 +15,7 @@ def create_super_user():
     phone = input("phone: ")
     email = input("email: ")
     with CreateSuperUser() as cu:
-        cu.create_superuser(first_name, last_name, password, phone, email, role=2)
+        cu.create_superuser(first_name, last_name, password, phone, email)
 
     if cu.err:
         print(cu.err)

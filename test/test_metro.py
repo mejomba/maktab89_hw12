@@ -5,6 +5,9 @@ from hashlib import sha256
 from sqlite3_contextmanager import (
     CreateUserContextManager,
     CreateBankAccountContextManager,
+    CreateSuperUserContextManager,
+    WithdrawContextManager,
+    DepositContextManager,
     create_tables,
 )
 from metro import (
@@ -212,6 +215,89 @@ class TestCreateBankAccountContextManager(unittest.TestCase):
             CB.create_bank_account(self.test_set_2[1], conn, cur)
         self.assertIs(CB.err, None)
         self.assertEqual(CB.result, f'create bank account for {CB.user.full_name} successfully')
+
+
+class TestCreateSuperUserContextManager(unittest.TestCase):
+    def setUp(self) -> None:
+        self.test_set_1 = ['mojtaba', 'aminzadeh', 'a1234567', '09361234566', 'mail@mail.com']
+        self.test_set_2 = ['', 'aminzadeh', 'a1234567', '09361234566', 'mail@mail.com']
+        self.test_set_3 = ['mojtaba', 'aminzadeh', 'pass', '09361234566', 'mail@mail.com']
+        self.test_set_4 = ['mojtaba', 'aminzadeh', 'a1234567', '361234566', 'mail@mail.com']
+        self.test_set_5 = ['mojtaba', 'aminzadeh', 'pass', '361234566', 'mail@mail.com']
+
+    def test_create_superuser(self):
+        create_tables(db_name='db_for_test')
+
+        self.conn = sqlite3.connect('db_for_test')
+        self.cur = self.conn.cursor()
+
+        with CreateSuperUserContextManager() as cu:
+            cu.create_superuser(*self.test_set_1, self.conn, self.cur)
+        self.assertEqual(cu.result, f'create user mojtaba aminzadeh successfully. id: {self.cur.lastrowid}')
+        self.assertIs(cu.err, None)
+
+        with CreateSuperUserContextManager() as cu:
+            cu.create_superuser(*self.test_set_2, self.conn, self.cur)
+        self.assertEqual(cu.err, f'create superuser fail\nHint: all input required')
+        self.assertIs(cu.result, None)
+
+        with CreateSuperUserContextManager() as cu:
+            cu.create_superuser(*self.test_set_3, self.conn, self.cur)
+        self.assertEqual(cu.err, f'create superuser fail\nHint: password minimum 8 characters, at least one letter and one number')
+        self.assertIs(cu.result, None)
+
+        with CreateSuperUserContextManager() as cu:
+            cu.create_superuser(*self.test_set_4, self.conn, self.cur)
+        self.assertEqual(cu.err, f'create superuser fail\nHint: phone incorrect. valid format: 09123456789')
+        self.assertIs(cu.result, None)
+
+        with CreateSuperUserContextManager() as cu:
+            cu.create_superuser(*self.test_set_5, self.conn, self.cur)
+        self.assertEqual(cu.err, f'create superuser fail\nHint: phone incorrect. valid format: 09123456789')
+        self.assertIs(cu.result, None)
+
+
+class TestWithdrawContextManager(unittest.TestCase):
+    def setUp(self) -> None:
+        self.test_set_1 = [0, 900]
+        self.test_set_2 = [1, 900]
+
+    def test_withdraw(self):
+        create_tables(db_name='db_for_test')
+        self.conn = sqlite3.connect('db_for_test')
+        self.cur = self.conn.cursor()
+
+        with WithdrawContextManager() as wd:
+            wd.withdraw(*self.test_set_1, self.conn, self.cur)
+        self.assertEqual(wd.err, f'withdraw fail\nHint: bank account not found')
+        self.assertIs(wd.result, None)
+
+        with WithdrawContextManager() as wd:
+            wd.withdraw(*self.test_set_2, self.conn, self.cur)
+        self.assertEqual(wd.result, f'withdraw success\nnew balance: 9000')
+        self.assertIs(wd.err, None)
+
+
+class TestDepositContextManager(unittest.TestCase):
+    def setUp(self) -> None:
+        pass
+
+    def test_deposit(self):
+        create_tables(db_name='db_for_test')
+        self.conn = sqlite3.connect('db_for_test')
+        self.cur = self.conn.cursor()
+
+        with DepositContextManager(2, 1, 10000) as dp:
+            dp.deposit(1000, self.conn, self.cur)
+        self.assertEqual(dp.result, f'deposit success\nyour new balance: 11000')
+        self.assertIs(dp.err, None)
+
+        self.conn = sqlite3.connect('db_for_test')
+        self.cur = self.conn.cursor()
+        with DepositContextManager(10, 10, 10000) as dp:
+            dp.deposit(1000, self.conn, self.cur)
+        self.assertEqual(dp.err, f'deposit fail\nuser not found')
+        self.assertIs(dp.result, None)
 
 
 if __name__ == "__main__":

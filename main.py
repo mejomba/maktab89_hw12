@@ -98,7 +98,7 @@ def create_regular_user():
         print('Done')
 
 
-def manage_bank_account():
+def manage_bank_account(pk, owner_id, balance):
     while True:
         show_menu(bank_menu)
         user_input = int(input("> "))
@@ -114,6 +114,7 @@ def manage_bank_account():
             amount = int(input('amount for deposit'))
             with DepositContextManager(pk, owner_id, balance) as de:
                 de.deposit(amount)
+            balance = de.new_balance
             if de.err:
                 print(de.err)
             if de.result:
@@ -170,8 +171,7 @@ if __name__ == "__main__":
             user_id = int(input('user id: '))
             data = login_to_bank(user_id)
             if data:
-                pk, owner_id, balance = data
-                manage_bank_account()
+                manage_bank_account(*data)
             else:
                 print(f"user {user_id} don't hove bank account")
 

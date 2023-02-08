@@ -180,7 +180,7 @@ class CreateUserContextManager(BaseContextManager):
             self.err = f"create user fail\nHint: user don't have bank account"
         elif not exc_val and self.user.have_bank_account and not self.local_connection:
             self.result = f'create user {self.user.full_name} successfully ID: {self.user.user_id}'
-        # return True
+        return True
 
 
 class CreateBankAccountContextManager(BaseContextManager):

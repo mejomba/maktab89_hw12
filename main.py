@@ -101,17 +101,18 @@ def create_regular_user():
 def manage_bank_account(pk, owner_id, balance):
     while True:
         show_menu(bank_menu)
-        user_input = int(input("> "))
+        user_input = get_digit('> ')
         if user_input == 1:
             with WithdrawContextManager() as wd:
-                amount = int(input('amount for withdraw'))
+                amount = get_digit('amount for withdraw')
                 wd.withdraw(owner_id, amount)
             if wd.err:
                 print(wd.err)
             if wd.result:
                 print(wd.result)
+            balance = wd.balance
         elif user_input == 2:
-            amount = int(input('amount for deposit'))
+            amount = get_digit('amount for deposit')
             with DepositContextManager(pk, owner_id, balance) as de:
                 de.deposit(amount)
             balance = de.new_balance
@@ -158,32 +159,35 @@ def admin_panel():
 if __name__ == "__main__":
     while True:
         show_menu(main_menu)
-        user_input = int(input('> '))
+        user_input = get_digit("> ")
 
-        if user_input == 1:
-            role = int(input('role: (1: user, 2: admin): '))
+        if user_input == 1:  # register new user
+            role = get_digit('role: (1: user, 2: admin): ')
             if role == 2:
                 create_super_user()
             elif role == 1:
                 create_regular_user()
 
-        elif user_input == 2:
-            user_id = int(input('user id: '))
-            data = login_to_bank(user_id)
-            if data:
-                manage_bank_account(*data)
+        elif user_input == 2:  # manage bank account
+            user_id = get_digit('user_id: ')
+            if user_id:
+                # data = login_to_bank(user_id)
+                if data := login_to_bank(user_id):
+                    manage_bank_account(*data)
+                else:
+                    print(f"user {user_id} don't hove bank account")
             else:
-                print(f"user {user_id} don't hove bank account")
+                print('wrong input')
 
-        elif user_input == 3:
+        elif user_input == 3:  # buy ticket for travel
             buy_ticket()
 
-        elif user_input == 4:
+        elif user_input == 4:  # administrator
             admin_id = int(input('admin id: '))
             admin_password = input('password: ')
             if login_super_user(user_id=admin_id, password=admin_password):
                 admin_panel()
-        elif user_input == 0:
+        elif user_input == 0:  # exit
             print('exit')
             break
         else:

@@ -261,6 +261,8 @@ class TestWithdrawContextManager(unittest.TestCase):
     def setUp(self) -> None:
         self.test_set_1 = [0, 900]
         self.test_set_2 = [1, 900]
+        BankAccount.WAGE_AMOUNT = 100
+        BankAccount.MinBalance = 1000
 
     def test_withdraw(self):
         create_tables(db_name='db_for_test')
@@ -274,7 +276,7 @@ class TestWithdrawContextManager(unittest.TestCase):
 
         with WithdrawContextManager() as wd:
             wd.withdraw(*self.test_set_2, self.conn, self.cur)
-        self.assertEqual(wd.result, f'withdraw success\nnew balance: 9000')
+        self.assertEqual(wd.result, f'withdraw success\nnew balance: 10000')
         self.assertIs(wd.err, None)
 
 

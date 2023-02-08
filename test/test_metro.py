@@ -22,25 +22,6 @@ from custom_exception import (
 )
 
 
-class TestCreateBankAccount(unittest.TestCase):
-    def setUp(self) -> None:
-        self.test_set_1 = ['jafar', 15000]
-        self.test_set_2 = [User('mojtaba', 'aminzadeh', 'a1234567', '0936', 'abc@gmail.com', 1), 15000]
-
-    def test_create_bank_account_context_manager_test_set1(self):
-        with CreateBankAccountContextManager(self.test_set_1[0]) as CB:
-            CB.create_bank_account(self.test_set_1[1])
-        self.assertEqual(CB.err, f'create bank account fail\nHint: owner must be a User')
-        self.assertIs(CB.result, None)
-
-        conn = sqlite3.connect('db_for_test')
-        cur = conn.cursor()
-        with CreateBankAccountContextManager(self.test_set_2[0]) as CB:
-            CB.create_bank_account(self.test_set_2[1], conn, cur)
-        self.assertIs(CB.err, None)
-        self.assertEqual(CB.result, f'create bank account for {CB.user.full_name} successfully')
-
-
 class TestUserClass(unittest.TestCase):
     def setUp(self) -> None:
         self.register_new_user_test_set_1 = ['mojtaba', 'aminzadeh', 'a1234567', '09112345678', 'mojtaba@mail.com', 1]
@@ -212,6 +193,25 @@ class TestCreateUserContextManager(unittest.TestCase):
             with CreateUserContextManager() as CU:
                 CU.create_user(*self.test_set_5, conn=self.conn, cur=self.cur)
         self.assertEqual(f'create user fail\nHint: {err.exception}', CU.err)
+
+
+class TestCreateBankAccountContextManager(unittest.TestCase):
+    def setUp(self) -> None:
+        self.test_set_1 = ['jafar', 15000]
+        self.test_set_2 = [User('mojtaba', 'aminzadeh', 'a1234567', '0936', 'abc@gmail.com', 1), 15000]
+
+    def test_create_bank_account_context_manager_test_set1(self):
+        with CreateBankAccountContextManager(self.test_set_1[0]) as CB:
+            CB.create_bank_account(self.test_set_1[1])
+        self.assertEqual(CB.err, f'create bank account fail\nHint: owner must be a User')
+        self.assertIs(CB.result, None)
+
+        conn = sqlite3.connect('db_for_test')
+        cur = conn.cursor()
+        with CreateBankAccountContextManager(self.test_set_2[0]) as CB:
+            CB.create_bank_account(self.test_set_2[1], conn, cur)
+        self.assertIs(CB.err, None)
+        self.assertEqual(CB.result, f'create bank account for {CB.user.full_name} successfully')
 
 
 if __name__ == "__main__":

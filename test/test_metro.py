@@ -20,8 +20,6 @@ from custom_exception import (
     InvalidPassword,
     InvalidPhoneFormat,
     MinBalanceException,
-    UserCreationFail,
-    CreateBankAccountFail,
 )
 
 
@@ -177,25 +175,25 @@ class TestCreateUserContextManager(unittest.TestCase):
         self.assertEqual(CU.result, f"create user mojtaba aminzadeh successfully ID: {CU.cur.lastrowid}")
         self.assertIs(CU.err, None)
 
-        with self.assertRaises(UserCreationFail) as err:
-            with CreateUserContextManager() as CU:
-                CU.create_user(*self.test_set_2, conn=self.conn, cur=self.cur)
-        self.assertEqual(f'create user fail\nHint: {err.exception}', CU.err)
+        with CreateUserContextManager() as CU:
+            CU.create_user(*self.test_set_2, conn=self.conn, cur=self.cur)
+        self.assertEqual(f'create user fail\nHint: all input required', CU.err)
 
-        with self.assertRaises(InvalidPassword) as err:
-            with CreateUserContextManager() as CU:
-                CU.create_user(*self.test_set_3, conn=self.conn, cur=self.cur)
-        self.assertEqual(f'create user fail\nHint: {err.exception}', CU.err)
+        with CreateUserContextManager() as CU:
+            CU.create_user(*self.test_set_3, conn=self.conn, cur=self.cur)
+        self.assertEqual(f'create user fail\nHint: password minimum 8 characters, at least one letter and one number', CU.err)
 
-        with self.assertRaises(InvalidPhoneFormat) as err:
-            with CreateUserContextManager() as CU:
-                CU.create_user(*self.test_set_4, conn=self.conn, cur=self.cur)
-        self.assertEqual(f'create user fail\nHint: {err.exception}', CU.err)
+        with CreateUserContextManager() as CU:
+            CU.create_user(*self.test_set_4, conn=self.conn, cur=self.cur)
+        self.assertEqual(f'create user fail\nHint: phone incorrect. valid format: 09123456789', CU.err)
 
-        with self.assertRaises(InvalidPhoneFormat) as err:
-            with CreateUserContextManager() as CU:
-                CU.create_user(*self.test_set_5, conn=self.conn, cur=self.cur)
-        self.assertEqual(f'create user fail\nHint: {err.exception}', CU.err)
+        with CreateUserContextManager() as CU:
+            CU.create_user(*self.test_set_5, conn=self.conn, cur=self.cur)
+        self.assertEqual(f'create user fail\nHint: phone incorrect. valid format: 09123456789', CU.err)
+
+    def tearDown(self) -> None:
+        self.cur.close()
+        self.conn.close()
 
 
 class TestCreateBankAccountContextManager(unittest.TestCase):
@@ -279,6 +277,10 @@ class TestWithdrawContextManager(unittest.TestCase):
         self.assertEqual(wd.result, f'withdraw success\nnew balance: 10000')
         self.assertIs(wd.err, None)
 
+    def tearDown(self) -> None:
+        self.cur.close()
+        self.conn.close()
+
 
 class TestDepositContextManager(unittest.TestCase):
     def setUp(self) -> None:
@@ -291,6 +293,7 @@ class TestDepositContextManager(unittest.TestCase):
 
         with DepositContextManager(2, 1, 10000) as dp:
             dp.deposit(1000, self.conn, self.cur)
+        # print(self.cur.execute('select * from bank_account'))
         self.assertEqual(dp.result, f'deposit success\nyour new balance: 11000')
         self.assertIs(dp.err, None)
 

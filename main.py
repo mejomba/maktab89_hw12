@@ -33,8 +33,9 @@ END = "\033[0m"
 main_menu = {
     1: 'register new user',
     2: 'manage bank account',
-    3: 'buy ticket for travel',
+    3: 'buy ticket',
     4: 'Administrator',
+    5: 'select travel',
     0: 'exit'
 }
 administrator_menu = {
@@ -64,15 +65,6 @@ def show_menu(menu):
     print(f'========== {BLUE}{var_name(menu, globals())}{END} ==========')
     for k, v in menu.items():
         print(f'{k}: {v}')
-
-
-# def withdraw(user, amount):
-#     with WithdrawContextManager(user=user, amount=amount) as w:
-#         w.withdraw()
-
-
-def deposit(user, value):
-    pass
 
 
 def create_regular_user():
@@ -171,7 +163,6 @@ if __name__ == "__main__":
         elif user_input == 2:  # manage bank account
             user_id = get_digit('user_id: ')
             if user_id:
-                # data = login_to_bank(user_id)
                 if data := login_to_bank(user_id):
                     manage_bank_account(*data)
                 else:
@@ -183,7 +174,7 @@ if __name__ == "__main__":
             buy_ticket()
 
         elif user_input == 4:  # administrator
-            admin_id = int(input('admin id: '))
+            admin_id = get_digit('admin id:')
             admin_password = input('password: ')
             if login_super_user(user_id=admin_id, password=admin_password):
                 admin_panel()

@@ -23,6 +23,6 @@
 0. exit
 
 
-#database model
+# database model
 
 ![database_model.png](database_model.png)

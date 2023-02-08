@@ -1,12 +1,6 @@
 import os
 from utils import get_digit
 from admin import create_super_user
-# from custom_contextmanager import (
-#     CreateUserContextManager,
-#     CreateBankAccountContextManager,
-#     SelectUserContextManager,
-#     WithdrawContextManager
-# )
 
 from sqlite3_contextmanager import (
     CreateUserContextManager as CreateUser,
@@ -14,7 +8,9 @@ from sqlite3_contextmanager import (
     WithdrawContextManager,
     DepositContextManager,
     BuyTicketContextManager,
-    login_to_bank
+    TravelContextManager,
+    login_to_bank,
+    create_tables
 )
 from admin import (
     login_super_user,
@@ -33,8 +29,9 @@ END = "\033[0m"
 main_menu = {
     1: 'register new user',
     2: 'manage bank account',
-    3: 'buy ticket for travel',
+    3: 'buy ticket',
     4: 'Administrator',
+    5: 'select travel',
     0: 'exit'
 }
 administrator_menu = {
@@ -52,6 +49,7 @@ bank_menu = {
 
 
 def clear():
+    input('press enter to continue... ')
     os.system('cls') if 'nt' in os.name else os.system('clear')
 
 
@@ -60,19 +58,9 @@ def var_name(obj, namespace):
 
 
 def show_menu(menu):
-    clear()
     print(f'========== {BLUE}{var_name(menu, globals())}{END} ==========')
     for k, v in menu.items():
         print(f'{k}: {v}')
-
-
-# def withdraw(user, amount):
-#     with WithdrawContextManager(user=user, amount=amount) as w:
-#         w.withdraw()
-
-
-def deposit(user, value):
-    pass
 
 
 def create_regular_user():
@@ -96,22 +84,24 @@ def create_regular_user():
         print(cu.result)
     if cu.user and cb.bank:
         print('Done')
+    clear()
 
 
 def manage_bank_account(pk, owner_id, balance):
     while True:
         show_menu(bank_menu)
-        user_input = int(input("> "))
+        user_input = get_digit('> ')
         if user_input == 1:
             with WithdrawContextManager() as wd:
-                amount = int(input('amount for withdraw'))
+                amount = get_digit('amount for withdraw: ')
                 wd.withdraw(owner_id, amount)
             if wd.err:
                 print(wd.err)
             if wd.result:
                 print(wd.result)
+            balance = wd.balance
         elif user_input == 2:
-            amount = int(input('amount for deposit'))
+            amount = get_digit('amount for deposit: ')
             with DepositContextManager(pk, owner_id, balance) as de:
                 de.deposit(amount)
             balance = de.new_balance
@@ -124,6 +114,7 @@ def manage_bank_account(pk, owner_id, balance):
             return
         else:
             print('wrong input')
+        clear()
 
 
 def buy_ticket():
@@ -135,6 +126,7 @@ def buy_ticket():
         print(buy.err)
     if buy.result:
         print(buy.result)
+    clear()
 
 
 def admin_panel():
@@ -153,37 +145,54 @@ def admin_panel():
             return
         else:
             print('wrong input')
+        clear()
+
+
+def select_travel(user_id):
+    with TravelContextManager() as tr:
+        tr.select_travel(user_id)
+    if tr.err:
+        print(tr.err)
+    if tr.result:
+        print(tr.result)
+    clear()
 
 
 if __name__ == "__main__":
+    create_tables()
     while True:
         show_menu(main_menu)
-        user_input = int(input('> '))
+        user_input = get_digit("> ")
 
-        if user_input == 1:
-            role = int(input('role: (1: user, 2: admin): '))
+        if user_input == 1:  # register new user
+            role = get_digit('role: (1: user, 2: admin): ')
             if role == 2:
                 create_super_user()
             elif role == 1:
                 create_regular_user()
 
-        elif user_input == 2:
-            user_id = int(input('user id: '))
-            data = login_to_bank(user_id)
-            if data:
-                manage_bank_account(*data)
+        elif user_input == 2:  # manage bank account
+            user_id = get_digit('user_id: ')
+            if user_id:
+                if data := login_to_bank(user_id):
+                    manage_bank_account(*data)
+                else:
+                    print(f"user {user_id} don't hove bank account")
             else:
-                print(f"user {user_id} don't hove bank account")
+                print('wrong input')
 
-        elif user_input == 3:
+        elif user_input == 3:  # buy ticket for travel
             buy_ticket()
 
-        elif user_input == 4:
-            admin_id = int(input('admin id: '))
+        elif user_input == 4:  # administrator
+            admin_id = get_digit('admin id:')
             admin_password = input('password: ')
             if login_super_user(user_id=admin_id, password=admin_password):
                 admin_panel()
-        elif user_input == 0:
+        elif user_input == 5:
+            user_id = get_digit('user_id: ')
+            select_travel(user_id)
+        elif user_input == 0:  # exit
             print('exit')
             break
         else:

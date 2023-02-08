@@ -26,6 +26,7 @@ UNDER = "\u001b[4m"
 BOLD = "\u001b[1m"
 END = "\033[0m"
 
+
 def create_tables(db_name='metro.db'):
     with sqlite3.connect(db_name) as conn:
         cur = conn.cursor()

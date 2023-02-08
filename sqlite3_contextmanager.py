@@ -7,6 +7,7 @@ from custom_exception import (
     UserCreationFail,
     CreateBankAccountFail,
     CreateSuperUserFail,
+    BankAccountNotFound,
 )
 
 from utils import get_digit, database_connector
@@ -220,12 +221,15 @@ class CreateSuperUserContextManager(BaseContextManager):
     def __enter__(self):
         return self
 
-    def create_superuser(self, first_name, last_name, password, phone, email, role):
-        self.superuser = User.register_new_user(first_name, last_name, password, phone, email, role)
+    def create_superuser(self, first_name, last_name, password, phone, email, conn=None, cur=None):
+        if first_name and last_name and password and phone and email:
+            self.superuser = User.register_new_user(first_name, last_name, password, phone, email, 2)
+        else:
+            raise CreateSuperUserFail('all input required')
+
         if self.superuser:
             self.superuser.user_id = None
-            self.conn = sqlite3.connect('metro.db')
-            self.cur = self.conn.cursor()
+            self.conn, self.cur, self.local_connection = database_connector('metro.db', conn, cur)
             self.superuser.user_id = User.insert_to_database(self.superuser, self.cur)
         else:
             raise CreateSuperUserFail('superuser creation fail')
@@ -256,17 +260,14 @@ class WithdrawContextManager(BaseContextManager):
         return self
 
     def withdraw(self, user_id, amount, conn=None, cur=None):
-        if conn and cur:
-            self.conn = conn
-            self.cur = cur
-            self.local_connection = False
-        else:
-            self.conn = sqlite3.connect('metro.db')
-            self.cur = self.conn.cursor()
-            self.local_connection = True
+        self.conn, self.cur, self.local_connection = database_connector('metro.db', conn, cur)
 
         query = """SELECT * FROM bank_account WHERE owner_id=?"""
-        self.bank_account_id, self.user_id, self.balance = self.cur.execute(query, (user_id,)).fetchone()
+        data = self.cur.execute(query, (user_id,)).fetchone()
+        if data:
+            self.bank_account_id, self.user_id, self.balance = data
+        else:
+            raise BankAccountNotFound('bank account not found')
         if self.user_id:
             self.balance = BankAccount.withdraw(self.balance, amount)
             query = """
@@ -289,9 +290,9 @@ class WithdrawContextManager(BaseContextManager):
             self.conn.commit()
             self.cur.close()
             self.conn.close()
-            self.result = f'withdraw success\n new balance: {self.balance}'
+            self.result = f'withdraw success\nnew balance: {self.balance}'
         else:
-            self.result = f'withdraw success\n new balance: {self.balance}'
+            self.result = f'withdraw success\nnew balance: {self.balance}'
 
         return True
 
@@ -302,19 +303,13 @@ class DepositContextManager(BaseContextManager):
         self.pk = pk
         self.user_id = user_id
         self.balance = balance
-        self.user = None
         self.new_balance = None
 
     def __enter__(self):
         return self
 
     def deposit(self, amount, conn=None, cur=None):
-        if conn and cur:
-            self.conn, self.cur, self.local_connection = conn, cur, False
-        else:
-            self.conn = sqlite3.connect('metro.db')
-            self.cur = self.conn.cursor()
-            self.local_connection = True
+        self.conn, self.cur, self.local_connection = database_connector('metro.db', conn, cur)
 
         self.cur.execute("BEGIN TRANSACTION")
         self.new_balance = BankAccount.deposit(self.balance, amount)
@@ -324,7 +319,7 @@ class DepositContextManager(BaseContextManager):
                     WHERE owner_id=?
                     """
         data = (self.new_balance, self.user_id)
-        self.cur.execute(query, data)
+        self.row = self.cur.execute(query, data).rowcount
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_val:
@@ -332,11 +327,13 @@ class DepositContextManager(BaseContextManager):
             self.cur.close()
             self.conn.close()
             self.err = f'deposit fail\n{exc_val}'
-        else:
+        elif self.row:
             self.conn.commit()
             self.cur.close()
             self.conn.close()
             self.result = f'deposit success\nyour new balance: {self.new_balance}'
+        else:
+            self.err = f'deposit fail\nuser not found'
         return True
 
 

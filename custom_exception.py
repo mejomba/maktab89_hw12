@@ -44,3 +44,7 @@ class CreateBankAccountFail(Exception):
 
 class CreateSuperUserFail(Exception):
     pass
+
+
+class BankAccountNotFound(Exception):
+    pass

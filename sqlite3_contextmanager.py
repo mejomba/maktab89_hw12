@@ -8,6 +8,9 @@ from custom_exception import (
     CreateBankAccountFail,
     CreateSuperUserFail,
     BankAccountNotFound,
+    TravelNotFound,
+    TravelNotSubmit,
+    UserCartNotFound,
 )
 
 from utils import get_digit, database_connector
@@ -77,6 +80,7 @@ def create_tables(db_name='metro.db'):
                     (user_cart_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id INTEGER,
                     cart_id INTEGER,
+                    credit INTEGER,
                     FOREIGN KEY(user_id) REFERENCES user(user_id),
                     FOREIGN KEY(cart_id) REFERENCES cart(cart_id)
                     );
@@ -368,10 +372,10 @@ class BuyTicketContextManager(BaseContextManager):
             raise Exception('TODO: create buy ticket exception')
         if wd.result:
             print(wd.result)
-        query = """INSERT INTO user_cart (user_id, cart_id)
-                    VALUES(?,?)
+        query = """INSERT INTO user_cart (user_id, cart_id, credit)
+                    VALUES(?,?,?)
                 """
-        data = user_id, cart_type
+        data = user_id, cart_type, cart_price
         self.cur.execute(query, data)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -583,6 +587,62 @@ class TravelContextManager(BaseContextManager):
             else:
                 print(f'{BLACK}{CYANB}{travel_id:<9} {price:<8} {start_time:<20} {end_time:<20} {active:<7}{END}')
                 color = not color
+
+    def select_travel(self, user_id, conn=None, cur=None):
+        self.__show_travel()
+        travel_id = get_digit('select from active travel: ')
+        self.conn, self.cur, self.local_connection = database_connector('metro.db', conn, cur)
+
+        self.cur.execute("BEGIN TRANSACTION")
+        query = """
+                SELECT * FROM user
+                WHERE user_id=?
+                """
+        data = (user_id,)
+        user_record = self.cur.execute(query, data).fetchone()
+        if not user_record:
+            raise UserNotFound('user not fond')
+
+        query = """
+                SELECT * FROM travel
+                WHERE travel_id=?
+                """
+        data = (travel_id,)
+        record = self.cur.execute(query, data).fetchone()
+        if record:
+            travel_id, self.price, start_time, end_time, active = record
+            print(f'{GREEN}{BOLD}{UNDER}number    price    start_time           end_time             active{END}')
+            print(f'{BLACK}{MAGENTAB}{travel_id:<9} {self.price:<8} {start_time:<20} {end_time:<20} {active:<7}{END}')
+        else:
+            raise TravelNotFound('travel not found')
+
+        if active:
+            query = """
+                    SELECT * FROM user_cart
+                    WHERE user_id=?
+                    """
+            data = (user_id,)
+            user_cart = self.cur.execute(query, data).fetchone()
+            if user_cart:
+                pk, user_id, cart_id, credit = user_cart
+            else:
+                raise UserCartNotFound('user cart not found')
+            query = """
+                    UPDATE user_cart
+                    SET credit=?
+                    WHERE user_cart_id=?
+                    """
+            data = (credit-self.price, pk)
+            self.cur.execute(query, data)
+
+            query = """
+                    INSERT INTO user_travel (user_id, travel_id)
+                    VALUES (?,?)
+                """
+            data = (user_id, travel_id)
+            self.cur.execute(query, data)
+        else:
+            raise TravelNotSubmit('travel not active')
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_val:

@@ -1,12 +1,6 @@
 import os
 from utils import get_digit
 from admin import create_super_user
-# from custom_contextmanager import (
-#     CreateUserContextManager,
-#     CreateBankAccountContextManager,
-#     SelectUserContextManager,
-#     WithdrawContextManager
-# )
 
 from sqlite3_contextmanager import (
     CreateUserContextManager as CreateUser,
@@ -14,7 +8,9 @@ from sqlite3_contextmanager import (
     WithdrawContextManager,
     DepositContextManager,
     BuyTicketContextManager,
-    login_to_bank
+    TravelContextManager,
+    login_to_bank,
+    create_tables
 )
 from admin import (
     login_super_user,
@@ -53,6 +49,7 @@ bank_menu = {
 
 
 def clear():
+    input('press enter to continue... ')
     os.system('cls') if 'nt' in os.name else os.system('clear')
 
 
@@ -61,7 +58,6 @@ def var_name(obj, namespace):
 
 
 def show_menu(menu):
-    clear()
     print(f'========== {BLUE}{var_name(menu, globals())}{END} ==========')
     for k, v in menu.items():
         print(f'{k}: {v}')
@@ -88,6 +84,7 @@ def create_regular_user():
         print(cu.result)
     if cu.user and cb.bank:
         print('Done')
+    clear()
 
 
 def manage_bank_account(pk, owner_id, balance):
@@ -96,7 +93,7 @@ def manage_bank_account(pk, owner_id, balance):
         user_input = get_digit('> ')
         if user_input == 1:
             with WithdrawContextManager() as wd:
-                amount = get_digit('amount for withdraw')
+                amount = get_digit('amount for withdraw: ')
                 wd.withdraw(owner_id, amount)
             if wd.err:
                 print(wd.err)
@@ -104,7 +101,7 @@ def manage_bank_account(pk, owner_id, balance):
                 print(wd.result)
             balance = wd.balance
         elif user_input == 2:
-            amount = get_digit('amount for deposit')
+            amount = get_digit('amount for deposit: ')
             with DepositContextManager(pk, owner_id, balance) as de:
                 de.deposit(amount)
             balance = de.new_balance
@@ -117,6 +114,7 @@ def manage_bank_account(pk, owner_id, balance):
             return
         else:
             print('wrong input')
+        clear()
 
 
 def buy_ticket():
@@ -128,6 +126,7 @@ def buy_ticket():
         print(buy.err)
     if buy.result:
         print(buy.result)
+    clear()
 
 
 def admin_panel():
@@ -146,9 +145,21 @@ def admin_panel():
             return
         else:
             print('wrong input')
+        clear()
+
+
+def select_travel(user_id):
+    with TravelContextManager() as tr:
+        tr.select_travel(user_id)
+    if tr.err:
+        print(tr.err)
+    if tr.result:
+        print(tr.result)
+    clear()
 
 
 if __name__ == "__main__":
+    create_tables()
     while True:
         show_menu(main_menu)
         user_input = get_digit("> ")
@@ -178,6 +189,9 @@ if __name__ == "__main__":
             admin_password = input('password: ')
             if login_super_user(user_id=admin_id, password=admin_password):
                 admin_panel()
+        elif user_input == 5:
+            user_id = get_digit('user_id: ')
+            select_travel(user_id)
         elif user_input == 0:  # exit
             print('exit')
             break

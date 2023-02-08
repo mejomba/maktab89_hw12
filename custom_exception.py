@@ -48,3 +48,15 @@ class CreateSuperUserFail(Exception):
 
 class BankAccountNotFound(Exception):
     pass
+
+
+class TravelNotFound(Exception):
+    pass
+
+
+class TravelNotSubmit(Exception):
+    pass
+
+
+class UserCartNotFound(Exception):
+    pass

@@ -233,8 +233,8 @@ class Travel:
         start, end = list(map(lambda str_time: datetime.strptime(str_time, '%Y/%m/%d %H:%M'), t))
         if start > end:
             raise InvalidTimePeriod("start time must be lower than end time")
-        if p <= 0:
-            raise InvalidPriceValue("price value must be positive")
+        if not isinstance(p, int) or p <= 0:
+            raise InvalidPriceValue("price value must be positive number")
         is_active = Travel.is_active(t[1])
         return p, t[0], t[1], is_active
 

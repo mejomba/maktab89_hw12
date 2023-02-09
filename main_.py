@@ -84,7 +84,6 @@ def create_regular_user():
 
 def manage_bank_account(pk, owner_id, balance):
     while True:
-        # clear(True)
         show_menu(bank_menu)
         user_input = get_digit('> ')
         if user_input == 1:
@@ -96,21 +95,23 @@ def manage_bank_account(pk, owner_id, balance):
             if wd.result:
                 print(wd.result)
             balance = wd.balance
+            clear()
         elif user_input == 2:
             amount = get_digit('amount for deposit: ')
             with DepositContextManager(pk, owner_id, balance) as de:
                 de.deposit(amount)
-            balance = de.new_balance
             if de.err:
                 print(de.err)
             if de.result:
                 print(de.result)
+            balance = de.new_balance
+            clear()
         elif user_input == 0:
             print('exit')
             return
         else:
             print('wrong input')
-        # clear()
+            clear()
 
 
 def buy_ticket():
@@ -133,16 +134,20 @@ def admin_panel():
         user_input = get_digit('> ')
         if user_input == 1:
             submit_travel()
+            clear()
         elif user_input == 2:
             edit_travel()
+            clear()
         elif user_input == 3:
             create_cart()
+            clear()
         elif user_input == 0:
             print('exit')
             logout_super_user(admin_id)
             return
         else:
             print('wrong input')
+            clear()
         # clear()
 
 

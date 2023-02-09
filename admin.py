@@ -1,4 +1,4 @@
-from utils import clear
+from utils import clear, get_digit
 from sqlite3_contextmanager import (
     CreateSuperUserContextManager as CreateSuperUser,
     AuthContextManager as Auth,
@@ -35,7 +35,7 @@ def login_super_user(user_id, password):
 
 
 def submit_travel():
-    price = int(input("price: "))
+    price = get_digit('price: ')
     start_time = input('start_time (yyyy/mm/dd HH:MM): ')
     end_time = input('end_time (yyyy/mm/dd HH:MM): ')
     with Travel() as travel:

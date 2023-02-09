@@ -1,4 +1,5 @@
 import sqlite3
+from utils import clear
 from metro import User, BankAccount, Travel, Cart
 from custom_exception import (
     WrongPasswordException,
@@ -125,6 +126,7 @@ def insert_sql():
 
 
 def login_to_bank(user_id):
+    clear(True)
     with sqlite3.connect('metro.db') as conn:
         cur = conn.cursor()
         query = "SELECT * FROm bank_account WHERE owner_id=?"

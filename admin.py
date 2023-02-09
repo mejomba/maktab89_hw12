@@ -1,3 +1,4 @@
+from utils import clear
 from sqlite3_contextmanager import (
     CreateSuperUserContextManager as CreateSuperUser,
     AuthContextManager as Auth,
@@ -26,8 +27,10 @@ def login_super_user(user_id, password):
         login.login(user_id, password)
     if login.err:
         print(login.err)
+        clear()
     if login.result:
         print(login.result)
+        clear()
         return True
 
 

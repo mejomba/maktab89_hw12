@@ -352,25 +352,24 @@ class BuyTicketContextManager(BaseContextManager):
         return self
 
     def get_ticket(self, user_id, cart_type, conn=None, cur=None):
-        if conn and cur:
-            self.conn, self.cur, self.local_connection = conn, cur, False
-        else:
-            self.conn = sqlite3.connect('metro.db')
-            self.cur = self.conn.cursor()
-            self.local_connection = True
+        self.conn, self.cur, self.local_connection = database_connector('metro.db', conn, cur)
         cart_price = None
         self.cur.execute("BEGIN TRANSACTION")
         query = """SELECT credit FROM cart
                     WHERE cart_type_id=?
                 """
         data = (cart_type,)
-        cart_price = self.cur.execute(query, data).fetchone()[0]
+        record = self.cur.execute(query, data).fetchone()
+        if record:
+            cart_price = record[0]
+        else:
+            raise TypeError('cart not found')
 
         with WithdrawContextManager() as wd:
             wd.withdraw(user_id, amount=cart_price, conn=self.conn, cur=self.cur)
         if wd.err:
             print(wd.err)
-            raise Exception('TODO: create buy ticket exception')
+            raise Exception('buy ticket fail')
         if wd.result:
             print(wd.result)
         query = """INSERT INTO user_cart (user_id, cart_id, credit)
@@ -387,7 +386,7 @@ class BuyTicketContextManager(BaseContextManager):
             self.conn.commit()
             self.cur.close()
             self.conn.close()
-            self.result = f'buy ticket'
+            self.result = f'buy ticket id: {self.cur.lastrowid}'
         return True
 
 
@@ -490,14 +489,7 @@ class TravelContextManager(BaseContextManager):
         return self
 
     def add_travel(self, price: int, start_time: str, end_time: str, conn=None, cur=None):
-        if conn and cur:
-            self.conn = conn
-            self.cur = cur
-            self.local_connection = False
-        else:
-            self.conn = sqlite3.connect('metro.db')
-            self.cur = self.conn.cursor()
-            self.local_connection = True
+        self.conn, self.cur, self.local_connection = database_connector('metro.db', conn, cur)
 
         query = """
                 INSERT INTO travel (price, start_time, end_time, active)
@@ -505,8 +497,6 @@ class TravelContextManager(BaseContextManager):
                 """
 
         data = Travel.valid_data((start_time, end_time), price)
-
-        # data = (price, start_time, end_time, Travel.is_active(end_time))
         self.cur.execute(query, data)
 
     def edit_travel(self):
@@ -568,11 +558,8 @@ class TravelContextManager(BaseContextManager):
                 break
             travel_number = get_digit('\ntravel number for edit or delete (0:exit): ')
 
-    def __show_travel(self):
-        if self.conn is None and self.cur is None:
-            self.conn = sqlite3.connect('metro.db')
-            self.cur = self.conn.cursor()
-            self.local_connection = True
+    def __show_travel(self, conn=None, cur=None):
+        self.conn, self.cur, self.local_connection = database_connector('metro.db', conn, cur)
 
         query = """
                 SELECT * FROM travel;
@@ -589,9 +576,7 @@ class TravelContextManager(BaseContextManager):
                 print(f'{BLACK}{CYANB}{travel_id:<9} {price:<8} {start_time:<20} {end_time:<20} {active:<7}{END}')
                 color = not color
 
-    def select_travel(self, user_id, conn=None, cur=None):
-        self.__show_travel()
-        travel_id = get_digit('select from active travel: ')
+    def select_travel(self, user_id, user_cart_id, conn=None, cur=None):
         self.conn, self.cur, self.local_connection = database_connector('metro.db', conn, cur)
 
         self.cur.execute("BEGIN TRANSACTION")
@@ -604,10 +589,12 @@ class TravelContextManager(BaseContextManager):
         if not user_record:
             raise UserNotFound('user not fond')
 
+        self.__show_travel()
         query = """
                 SELECT * FROM travel
                 WHERE travel_id=?
                 """
+        travel_id = get_digit('select from active travel: ')
         data = (travel_id,)
         record = self.cur.execute(query, data).fetchone()
         if record:
@@ -620,9 +607,9 @@ class TravelContextManager(BaseContextManager):
         if active:
             query = """
                     SELECT * FROM user_cart
-                    WHERE user_id=?
+                    WHERE user_cart_id=?
                     """
-            data = (user_id,)
+            data = (user_cart_id,)
             user_cart = self.cur.execute(query, data).fetchone()
             if user_cart:
                 pk, user_id, cart_id, credit = user_cart

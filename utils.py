@@ -1,4 +1,11 @@
 import sqlite3
+import os
+
+
+def clear(now=False):
+    if not now:
+        input('press enter to continue... ')
+    os.system('cls') if 'nt' in os.name else os.system('clear')
 
 
 def get_digit(prompt=""):

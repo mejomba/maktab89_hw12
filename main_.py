@@ -1,5 +1,5 @@
 import os
-from utils import get_digit
+from utils import get_digit, clear
 from admin import create_super_user
 
 from sqlite3_contextmanager import (
@@ -48,11 +48,6 @@ bank_menu = {
 }
 
 
-def clear():
-    input('press enter to continue... ')
-    os.system('cls') if 'nt' in os.name else os.system('clear')
-
-
 def var_name(obj, namespace):
     return [name for name in namespace if namespace[name] is obj][0]
 
@@ -84,11 +79,12 @@ def create_regular_user():
         print(cu.result)
     if cu.user and cb.bank:
         print('Done')
-    clear()
+    # clear()
 
 
 def manage_bank_account(pk, owner_id, balance):
     while True:
+        # clear(True)
         show_menu(bank_menu)
         user_input = get_digit('> ')
         if user_input == 1:
@@ -114,25 +110,27 @@ def manage_bank_account(pk, owner_id, balance):
             return
         else:
             print('wrong input')
-        clear()
+        # clear()
 
 
 def buy_ticket():
-    user_id = int(input('user id: '))
-    cart_type = int(input('cart type: '))
+    user_id = get_digit('user_id: ')
+    cart_type = get_digit('cart type: ')
     with BuyTicketContextManager() as buy:
+        clear(True)
         buy.get_ticket(user_id, cart_type)
     if buy.err:
         print(buy.err)
     if buy.result:
         print(buy.result)
-    clear()
+    # clear()
 
 
 def admin_panel():
     while True:
+        # clear(True)
         show_menu(administrator_menu)
-        user_input = int(input('> '))
+        user_input = get_digit('> ')
         if user_input == 1:
             submit_travel()
         elif user_input == 2:
@@ -145,17 +143,18 @@ def admin_panel():
             return
         else:
             print('wrong input')
-        clear()
+        # clear()
 
 
-def select_travel(user_id):
+def select_travel(user_id, user_cart_id):
     with TravelContextManager() as tr:
-        tr.select_travel(user_id)
+        # clear(now=True)
+        tr.select_travel(user_id, user_cart_id)
     if tr.err:
         print(tr.err)
     if tr.result:
         print(tr.result)
-    clear()
+    # clear()
 
 
 if __name__ == "__main__":
@@ -165,33 +164,47 @@ if __name__ == "__main__":
         user_input = get_digit("> ")
 
         if user_input == 1:  # register new user
+            clear(True)
             role = get_digit('role: (1: user, 2: admin): ')
             if role == 2:
                 create_super_user()
+                clear()
             elif role == 1:
                 create_regular_user()
-
-        elif user_input == 2:  # manage bank account
-            user_id = get_digit('user_id: ')
-            if user_id:
-                if data := login_to_bank(user_id):
-                    manage_bank_account(*data)
-                else:
-                    print(f"user {user_id} don't hove bank account")
+                clear()
             else:
                 print('wrong input')
+                clear()
+
+        elif user_input == 2:  # manage bank account
+            if user_id := get_digit('user_id: '):
+                if data := login_to_bank(user_id):
+                    manage_bank_account(*data)
+                    clear(True)
+                else:
+                    print(f"user {user_id} don't hove bank account")
+                    clear()
+            else:
+                print('wrong input')
+                clear()
 
         elif user_input == 3:  # buy ticket for travel
             buy_ticket()
+            clear()
 
         elif user_input == 4:  # administrator
             admin_id = get_digit('admin id:')
             admin_password = input('password: ')
             if login_super_user(user_id=admin_id, password=admin_password):
                 admin_panel()
+                clear()
+
         elif user_input == 5:
             user_id = get_digit('user_id: ')
-            select_travel(user_id)
+            user_cart_id = get_digit('your cart/ticket id: ')
+            select_travel(user_id, user_cart_id)
+            clear()
+
         elif user_input == 0:  # exit
             print('exit')
             break

@@ -2,7 +2,6 @@ from hashlib import sha256
 from uuid import uuid4
 from custom_exception import (
     MinBalanceException,
-    InvalidTimeFormatException,
     InvalidTimePeriod,
     InvalidPriceValue,
     InvalidPhoneFormat,
@@ -37,9 +36,6 @@ class User:
     @property
     def full_name(self):
         return f'{self.first_name} {self.last_name}'
-
-    def get_info(self) -> str:
-        pass
 
     @staticmethod
     def __valid_pass(name_var: str, password: str) -> str:
@@ -78,8 +74,6 @@ class User:
     def login(cls, password, hash_password) -> bool:
         valid_pass = cls.__valid_pass('login password', password)
         if valid_pass and hash_password == valid_pass:
-            # self.is_authenticated = True
-            # return f'login success as {self.full_name}'
             return True
         else:
             return False
@@ -156,8 +150,6 @@ class BankAccount:
             self.__owner = User
         else:
             raise TypeError(f'owner must be a User')
-        # except TypeError as e:
-        #     print(f'ERR: {e}')
 
     @property
     def balance(self):
@@ -194,7 +186,6 @@ class BankAccount:
         """
         data = (1, user.user_id)
         cur.execute(query, data)
-        # return cur.lastrowid
 
     @staticmethod
     def deposit(balance, amount) -> int:
@@ -206,12 +197,6 @@ class BankAccount:
     def get_balance(self) -> int:
         self.__balance -= self.WAGE_AMOUNT  # برداشت کارمزد
         return self.__balance
-
-    def change_wage(self) -> None:
-        pass
-
-    def change_min_balance(self) -> None:
-        pass
 
 
 class Travel:

@@ -403,14 +403,7 @@ class AuthContextManager(BaseContextManager):
         return self
 
     def login(self, user_id, password, conn=None, cur=None):
-        if conn and cur:
-            self.conn = conn
-            self.cur = cur
-            self.local_connection = False
-        else:
-            self.conn = sqlite3.connect('metro.db')
-            self.cur = self.conn.cursor()
-            self.local_connection = True
+        self.conn, self.cur, self.local_connection = database_connector('metro.db', conn, cur)
 
         query = """
                 SELECT first_name, last_name, password, role_id, is_authenticated FROM user
@@ -442,14 +435,8 @@ class AuthContextManager(BaseContextManager):
             raise WrongPasswordException('wrong password')
 
     def logout(self, user_id, conn=None, cur=None):
-        if conn and cur:
-            self.conn = conn
-            self.cur = cur
-            self.local_connection = False
-        else:
-            self.conn = sqlite3.connect('metro.db')
-            self.cur = self.conn.cursor()
-            self.local_connection = True
+        self.conn, self.cur, self.local_connection = database_connector('metro.db', conn, cur)
+
         query = """
                 UPDATE user
                 SET is_authenticated=0
